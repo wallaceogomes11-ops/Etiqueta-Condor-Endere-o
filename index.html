@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
 <title>Condor — Sistema de Estoque</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=IBM+Plex+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -147,13 +147,17 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#0c0c0f;color:
 .end-meta-valor{font-size:13pt;font-weight:800;color:#111;line-height:1.1;}
 .end-pedidos-grid{flex:1;display:flex;flex-direction:row;align-items:stretch;overflow:hidden;}
 .end-pedidos-grid.grade{display:grid;grid-template-columns:1fr 1fr;align-items:stretch;gap:0;overflow:hidden;}
-.end-pedido-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2mm;}
+.end-pedido-item{flex:1;display:flex;flex-direction:row;align-items:center;justify-content:center;text-align:center;padding:2mm;gap:3mm;}
 .end-pedidos-grid.grade .end-pedido-item{border:0.5px solid #ebebeb;}
 .end-pedido-sep{width:1.5px;background:#e0e0e0;margin:3mm 0;flex-shrink:0;}
 .end-pedidos-grid.grade .end-pedido-sep{display:none;}
-.end-pedido-numero{font-weight:800;color:#E8620A;line-height:1.05;letter-spacing:-0.5px;font-family:'Syne',Arial,sans-serif;margin-bottom:1.5mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
-.end-pedido-qtd{font-weight:900;color:#111;line-height:1;font-family:'Syne',Arial,sans-serif;}
-.end-pedido-label{font-weight:700;color:#aaa;letter-spacing:3px;text-transform:uppercase;margin-top:1.5mm;}
+/* Cada coluna dentro do item (pedido / qtd / volume) */
+.end-pedido-col{display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.end-pedido-col-sep{width:1px;background:#e0e0e0;align-self:stretch;margin:1mm 0;flex-shrink:0;}
+.end-pedido-numero{font-weight:800;color:#E8620A;line-height:1.05;letter-spacing:-0.5px;font-family:'IBM Plex Sans',Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+.end-pedido-qtd{font-weight:800;color:#111;line-height:1;font-family:'IBM Plex Sans',Arial,sans-serif;}
+.end-pedido-vol{font-weight:800;color:#555;line-height:1;font-family:'IBM Plex Sans',Arial,sans-serif;}
+.end-pedido-label{font-weight:700;color:#aaa;letter-spacing:2px;text-transform:uppercase;margin-top:1mm;font-family:'IBM Plex Sans',Arial,sans-serif;}
 .end-rodape{margin-top:3mm;display:flex;justify-content:space-between;align-items:center;border-top:2px solid #E8620A;padding-top:2.5mm;}
 .end-rodape-data{font-size:7pt;color:#aaa;letter-spacing:1px;}
 .end-rodape-total{font-size:8pt;font-weight:700;color:#E8620A;letter-spacing:1px;text-transform:uppercase;}
@@ -581,7 +585,7 @@ function gerarEtiquetaPorEndereco() {
         return;
       }
 
-      // ── Agrupar por PEDIDO + somar Quantidades ──
+      // ── Agrupar por PEDIDO + somar Quantidades e Volumes ──
       var agrupado = {};
 
       registros.forEach(function(r){
@@ -591,20 +595,18 @@ function gerarEtiquetaPorEndereco() {
             .replace(/[^0-9.]/g,"")
         ) || 0;
 
-        // Fallback para campo VOLUME se QUANTIDADE não existir
-        if (quantidade === 0) {
-          quantidade = parseFloat(
-            (findField(r, "VOLUME") !== "—" ? findField(r, "VOLUME") : "0")
-              .replace(/[^0-9.]/g,"")
-          ) || 0;
-        }
+        var volume = parseFloat(
+          (findField(r, "VOLUME") !== "—" ? findField(r, "VOLUME") : "0")
+            .replace(/[^0-9.]/g,"")
+        ) || 0;
 
         if (!pedido || pedido === "—") pedido = "(sem pedido)";
 
         if (!agrupado[pedido]) {
-          agrupado[pedido] = { quantidade: 0 };
+          agrupado[pedido] = { quantidade: 0, volume: 0 };
         }
         agrupado[pedido].quantidade += quantidade;
+        agrupado[pedido].volume += volume;
       });
 
       // ── Ordenar pedidos numericamente ──
@@ -614,9 +616,9 @@ function gerarEtiquetaPorEndereco() {
         return na !== nb ? na - nb : a.localeCompare(b);
       });
 
-      // ── Estrutura final: [{ pedido, quantidade }] ──
+      // ── Estrutura final: [{ pedido, quantidade, volume }] ──
       var itensFinal = pedidos.map(function(p){
-        return { pedido: p, quantidade: agrupado[p].quantidade };
+        return { pedido: p, quantidade: agrupado[p].quantidade, volume: agrupado[p].volume };
       });
 
       var totalGeral = itensFinal.reduce(function(acc, i){ return acc + i.quantidade; }, 0);
@@ -648,15 +650,29 @@ function gerarEtiquetaPorEndereco() {
       // ── Montar blocos de pedidos ──
       var blocosHTML = itensFinal.map(function(item){
         var qtdStr = item.quantidade > 0 ? item.quantidade : "—";
+        var volStr = item.volume > 0 ? item.volume : "—";
         return (
           '<div class="end-pedido-item" style="padding:' + paddingItem + '">' +
-            '<div class="end-pedido-numero" style="font-size:' + fontePedido + '">' +
-              escapeHTML(item.pedido) +
+            '<div class="end-pedido-col">' +
+              '<div class="end-pedido-numero" style="font-size:' + fontePedido + '">' +
+                escapeHTML(item.pedido) +
+              '</div>' +
+              '<div class="end-pedido-label" style="font-size:' + fonteLabel + '">PEDIDO</div>' +
             '</div>' +
-            '<div class="end-pedido-qtd" style="font-size:' + fonteQtd + '">' +
-              qtdStr +
+            '<div class="end-pedido-col-sep"></div>' +
+            '<div class="end-pedido-col">' +
+              '<div class="end-pedido-qtd" style="font-size:' + fonteQtd + '">' +
+                qtdStr +
+              '</div>' +
+              '<div class="end-pedido-label" style="font-size:' + fonteLabel + '">QTD</div>' +
             '</div>' +
-            '<div class="end-pedido-label" style="font-size:' + fonteLabel + '">QTD</div>' +
+            '<div class="end-pedido-col-sep"></div>' +
+            '<div class="end-pedido-col">' +
+              '<div class="end-pedido-vol" style="font-size:' + fonteQtd + '">' +
+                volStr +
+              '</div>' +
+              '<div class="end-pedido-label" style="font-size:' + fonteLabel + '">VOLUME</div>' +
+            '</div>' +
           '</div>'
         );
       }).join(usarGrade ? '' : '<div class="end-pedido-sep"></div>');
@@ -738,15 +754,16 @@ function gerarEtiquetaPorEndereco() {
             "overflow:hidden;",
           "}",
 
-          /* Cada item de pedido */
+          /* Cada item de pedido — layout HORIZONTAL (3 colunas lado a lado) */
           ".end-pedido-item{",
             "flex:1;",
             "display:flex;",
-            "flex-direction:column;",
+            "flex-direction:row;",
             "align-items:center;",
             "justify-content:center;",
             "text-align:center;",
             "padding:2mm;",
+            "gap:3mm;",
           "}",
 
           /* Borda de célula na grade */
@@ -765,14 +782,17 @@ function gerarEtiquetaPorEndereco() {
           /* Ocultar separadores na grade */
           ".end-pedidos-grid.grade .end-pedido-sep{display:none;}",
 
-          /* Número do pedido — nunca quebra linha */
+          /* Coluna interna de cada item (pedido / qtd / volume) */
+          ".end-pedido-col{display:flex;flex-direction:column;align-items:center;justify-content:center;}",
+          ".end-pedido-col-sep{width:1px;background:#e0e0e0;align-self:stretch;margin:1mm 0;flex-shrink:0;}",
+
+          /* Número do pedido */
           ".end-pedido-numero{",
             "font-weight:800;",
             "color:#E8620A;",
             "line-height:1.05;",
             "letter-spacing:-0.5px;",
-            "font-family:'Syne',Arial,sans-serif;",
-            "margin-bottom:1.5mm;",
+            "font-family:'IBM Plex Sans',Arial,sans-serif;",
             "white-space:nowrap;",
             "overflow:hidden;",
             "text-overflow:ellipsis;",
@@ -781,19 +801,28 @@ function gerarEtiquetaPorEndereco() {
 
           /* Quantidade */
           ".end-pedido-qtd{",
-            "font-weight:900;",
+            "font-weight:800;",
             "color:#111;",
             "line-height:1;",
-            "font-family:'Syne',Arial,sans-serif;",
+            "font-family:'IBM Plex Sans',Arial,sans-serif;",
           "}",
 
-          /* Label "QTD" abaixo da quantidade */
+          /* Volume */
+          ".end-pedido-vol{",
+            "font-weight:800;",
+            "color:#555;",
+            "line-height:1;",
+            "font-family:'IBM Plex Sans',Arial,sans-serif;",
+          "}",
+
+          /* Labels abaixo de cada valor */
           ".end-pedido-label{",
             "font-weight:700;",
             "color:#aaa;",
-            "letter-spacing:3px;",
+            "letter-spacing:2px;",
             "text-transform:uppercase;",
-            "margin-top:1.5mm;",
+            "margin-top:1mm;",
+            "font-family:'IBM Plex Sans',Arial,sans-serif;",
           "}",
 
           /* Rodapé */
@@ -806,7 +835,7 @@ function gerarEtiquetaPorEndereco() {
 
         var htmlDoc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/>' +
           '<title>Endereço ' + escapeHTML(endereco.toUpperCase()) + ' - Condor</title>' +
-          '<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;600;800&display=swap" rel="stylesheet">' +
+          '<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;600;800&family=IBM+Plex+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">' +
           '<style>' + estilosEnd + '</style>' +
           '</head><body>' +
           '<div class="etiqueta-end">' + document.getElementById("etiquetaEndConteudo").innerHTML + '</div>' +
