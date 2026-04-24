@@ -154,7 +154,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#0c0c0f;color:
 /* Cada coluna dentro do item (pedido / qtd / volume) */
 .end-pedido-col{display:flex;flex-direction:column;align-items:center;justify-content:center;}
 .end-pedido-col-sep{width:1px;background:#e0e0e0;align-self:stretch;margin:1mm 0;flex-shrink:0;}
-.end-pedido-numero{font-weight:800;color:#E8620A;line-height:1.05;letter-spacing:-0.5px;font-family:'IBM Plex Sans',Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+.end-pedido-numero{font-weight:800;color:#D45500;line-height:1.05;letter-spacing:-0.5px;font-family:'IBM Plex Sans',Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
 .end-pedido-qtd{font-weight:800;color:#111;line-height:1;font-family:'IBM Plex Sans',Arial,sans-serif;}
 .end-pedido-vol{font-weight:800;color:#555;line-height:1;font-family:'IBM Plex Sans',Arial,sans-serif;}
 .end-pedido-label{font-weight:700;color:#aaa;letter-spacing:2px;text-transform:uppercase;margin-top:1mm;font-family:'IBM Plex Sans',Arial,sans-serif;}
@@ -630,21 +630,21 @@ function gerarEtiquetaPorEndereco() {
       usarGrade = numPedidos >= 3;
 
       if (numPedidos === 1) {
-        fontePedido = "52pt"; fonteQtd = "80pt"; paddingItem = "0"; fonteLabel = "9pt";
+        fontePedido = "72pt"; fonteQtd = "96pt"; paddingItem = "0"; fonteLabel = "11pt";
       } else if (numPedidos === 2) {
-        fontePedido = "34pt"; fonteQtd = "52pt"; paddingItem = "3mm 0"; fonteLabel = "8pt";
+        fontePedido = "48pt"; fonteQtd = "72pt"; paddingItem = "3mm 0"; fonteLabel = "10pt";
       } else if (numPedidos <= 4) {
         // grade 2x2: células grandes
-        fontePedido = "22pt"; fonteQtd = "34pt"; paddingItem = "2mm"; fonteLabel = "7pt";
+        fontePedido = "32pt"; fonteQtd = "48pt"; paddingItem = "2mm"; fonteLabel = "9pt";
       } else if (numPedidos <= 6) {
         // grade 2x3: células médias
-        fontePedido = "16pt"; fonteQtd = "24pt"; paddingItem = "1.5mm"; fonteLabel = "6.5pt";
+        fontePedido = "22pt"; fonteQtd = "34pt"; paddingItem = "1.5mm"; fonteLabel = "8pt";
       } else if (numPedidos <= 10) {
         // grade 2x5: células menores
-        fontePedido = "12pt"; fonteQtd = "18pt"; paddingItem = "1mm"; fonteLabel = "6pt";
+        fontePedido = "16pt"; fonteQtd = "24pt"; paddingItem = "1mm"; fonteLabel = "7pt";
       } else {
         // grade 2xN: células compactas
-        fontePedido = "9pt"; fonteQtd = "13pt"; paddingItem = "0.5mm"; fonteLabel = "5.5pt";
+        fontePedido = "12pt"; fonteQtd = "18pt"; paddingItem = "0.5mm"; fonteLabel = "6pt";
       }
 
       // ── Montar blocos de pedidos ──
@@ -789,7 +789,7 @@ function gerarEtiquetaPorEndereco() {
           /* Número do pedido */
           ".end-pedido-numero{",
             "font-weight:800;",
-            "color:#E8620A;",
+            "color:#D45500;",
             "line-height:1.05;",
             "letter-spacing:-0.5px;",
             "font-family:'IBM Plex Sans',Arial,sans-serif;",
