@@ -146,9 +146,12 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#0c0c0f;color:
 .end-meta-label{font-size:6pt;font-weight:700;color:#E8620A;letter-spacing:2px;text-transform:uppercase;margin-bottom:1.5mm;}
 .end-meta-valor{font-size:13pt;font-weight:800;color:#111;line-height:1.1;}
 .end-pedidos-grid{flex:1;display:flex;flex-direction:row;align-items:stretch;overflow:hidden;}
+.end-pedidos-grid.grade{display:grid;grid-template-columns:1fr 1fr;align-items:stretch;gap:0;overflow:hidden;}
 .end-pedido-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2mm;}
+.end-pedidos-grid.grade .end-pedido-item{border:0.5px solid #ebebeb;}
 .end-pedido-sep{width:1.5px;background:#e0e0e0;margin:3mm 0;flex-shrink:0;}
-.end-pedido-numero{font-weight:800;color:#E8620A;line-height:1;letter-spacing:-0.5px;font-family:'Syne',Arial,sans-serif;margin-bottom:2mm;word-break:break-all;}
+.end-pedidos-grid.grade .end-pedido-sep{display:none;}
+.end-pedido-numero{font-weight:800;color:#E8620A;line-height:1.05;letter-spacing:-0.5px;font-family:'Syne',Arial,sans-serif;margin-bottom:1.5mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
 .end-pedido-qtd{font-weight:900;color:#111;line-height:1;font-family:'Syne',Arial,sans-serif;}
 .end-pedido-label{font-weight:700;color:#aaa;letter-spacing:3px;text-transform:uppercase;margin-top:1.5mm;}
 .end-rodape{margin-top:3mm;display:flex;justify-content:space-between;align-items:center;border-top:2px solid #E8620A;padding-top:2.5mm;}
@@ -620,87 +623,47 @@ function gerarEtiquetaPorEndereco() {
       var numPedidos = itensFinal.length;
 
       // ── Calcular tamanhos de fonte dinamicamente ──
-      // 1 pedido → fonte enorme; mais pedidos → fonte menor
-      var fontePedido, fonteQtd, paddingItem, fonteLabel;
+      // 1-2 pedidos: linha horizontal; 3+ pedidos: grade 2 colunas
+      var fontePedido, fonteQtd, paddingItem, fonteLabel, usarGrade;
+      usarGrade = numPedidos >= 3;
+
       if (numPedidos === 1) {
         fontePedido = "52pt"; fonteQtd = "80pt"; paddingItem = "0"; fonteLabel = "9pt";
       } else if (numPedidos === 2) {
         fontePedido = "34pt"; fonteQtd = "52pt"; paddingItem = "3mm 0"; fonteLabel = "8pt";
-      } else if (numPedidos === 3) {
-        fontePedido = "24pt"; fonteQtd = "36pt"; paddingItem = "2mm 0"; fonteLabel = "7pt";
-      } else if (numPedidos === 4) {
-        fontePedido = "18pt"; fonteQtd = "26pt"; paddingItem = "1.5mm 0"; fonteLabel = "7pt";
+      } else if (numPedidos <= 4) {
+        // grade 2x2: células grandes
+        fontePedido = "22pt"; fonteQtd = "34pt"; paddingItem = "2mm"; fonteLabel = "7pt";
       } else if (numPedidos <= 6) {
-        fontePedido = "14pt"; fonteQtd = "20pt"; paddingItem = "1mm 0"; fonteLabel = "6.5pt";
+        // grade 2x3: células médias
+        fontePedido = "16pt"; fonteQtd = "24pt"; paddingItem = "1.5mm"; fonteLabel = "6.5pt";
+      } else if (numPedidos <= 10) {
+        // grade 2x5: células menores
+        fontePedido = "12pt"; fonteQtd = "18pt"; paddingItem = "1mm"; fonteLabel = "6pt";
       } else {
-        fontePedido = "11pt"; fonteQtd = "15pt"; paddingItem = "0.5mm 0"; fonteLabel = "6pt";
+        // grade 2xN: células compactas
+        fontePedido = "9pt"; fonteQtd = "13pt"; paddingItem = "0.5mm"; fonteLabel = "5.5pt";
       }
 
-      // ── Estrutura final: [{ pedido, quantidade }] ──
-var itensFinal = pedidos.map(function(p){
-  return { pedido: p, quantidade: agrupado[p].quantidade };
-});
+      // ── Montar blocos de pedidos ──
+      var blocosHTML = itensFinal.map(function(item){
+        var qtdStr = item.quantidade > 0 ? item.quantidade : "—";
+        return (
+          '<div class="end-pedido-item" style="padding:' + paddingItem + '">' +
+            '<div class="end-pedido-numero" style="font-size:' + fontePedido + '">' +
+              escapeHTML(item.pedido) +
+            '</div>' +
+            '<div class="end-pedido-qtd" style="font-size:' + fonteQtd + '">' +
+              qtdStr +
+            '</div>' +
+            '<div class="end-pedido-label" style="font-size:' + fonteLabel + '">QTD</div>' +
+          '</div>'
+        );
+      }).join(usarGrade ? '' : '<div class="end-pedido-sep"></div>');
 
-var totalGeral = itensFinal.reduce(function(acc, i){ return acc + i.quantidade; }, 0);
-var numPedidos = itensFinal.length;
-
-// 🔥 DEFINIR COLUNAS INTELIGENTE
-function getColunas(qtd){
-  if(qtd === 1) return 1;
-  if(qtd === 2) return 2;
-  if(qtd === 3) return 3;
-  if(qtd === 4) return 2;
-  if(qtd <= 6) return 3;
-  if(qtd <= 9) return 3;
-  return 4;
-}
-
-// 🔥 TAMANHO DE FONTE
-function getFonte(qtd){
-  if(qtd === 1) return "70pt";
-  if(qtd === 2) return "48pt";
-  if(qtd === 3) return "36pt";
-  if(qtd <= 6) return "26pt";
-  if(qtd <= 9) return "20pt";
-  return "16pt";
-}
-
-var colunas = getColunas(numPedidos);
-var fonte = getFonte(numPedidos);
-
-// 🔥 GRID NOVO
-var blocosHTML = '<div style="display:grid;grid-template-columns:repeat('+colunas+',1fr);gap:10px;width:100%;height:100%;">';
-
-itensFinal.forEach(function(item){
-  blocosHTML += `
-    <div style="
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      flex-direction:column;
-      border:2px solid #000;
-      padding:10px;
-      break-inside:avoid;
-      page-break-inside:avoid;
-    ">
-      <div style="
-        font-weight:bold;
-        font-size:${fonte};
-        white-space:nowrap;
-        overflow:hidden;
-        text-overflow:ellipsis;
-      ">
-        ${item.pedido}
-      </div>
-      <div>Qtd: ${item.quantidade}</div>
-    </div>
-  `;
-});
-
-blocosHTML += '</div>';
-
-var etiquetaHTML = blocosHTML
- =
+      // ── Montar HTML da etiqueta meia folha ──
+      var dataGeracao = new Date().toLocaleDateString("pt-BR");
+      var etiquetaHTML =
         '<div class="etiqueta-header">' +
           '<img src="' + LOGO_URL + '" alt="Condor"/>' +
           '<div class="etiqueta-titulo">' +
@@ -718,8 +681,7 @@ var etiquetaHTML = blocosHTML
             '<div class="end-meta-valor">' + numPedidos + '</div>' +
           '</div>' +
         '</div>' +
-        '<div class="end-pedidos-grid end-pedidos-n' + Math.min(numPedidos, 7) + '" ' +
-             'style="padding:' + paddingItem + '">' +
+        '<div class="end-pedidos-grid' + (usarGrade ? ' grade' : '') + '">' +
           blocosHTML +
         '</div>' +
         '<div class="end-rodape">' +
@@ -767,6 +729,15 @@ var etiquetaHTML = blocosHTML
             "overflow:hidden;",
           "}",
 
+          /* Grade 2 colunas para 3+ pedidos */
+          ".end-pedidos-grid.grade{",
+            "display:grid;",
+            "grid-template-columns:1fr 1fr;",
+            "align-items:stretch;",
+            "gap:0;",
+            "overflow:hidden;",
+          "}",
+
           /* Cada item de pedido */
           ".end-pedido-item{",
             "flex:1;",
@@ -778,7 +749,12 @@ var etiquetaHTML = blocosHTML
             "padding:2mm;",
           "}",
 
-          /* Separador vertical entre pedidos */
+          /* Borda de célula na grade */
+          ".end-pedidos-grid.grade .end-pedido-item{",
+            "border:0.5px solid #ebebeb;",
+          "}",
+
+          /* Separador vertical entre pedidos (linha única) */
           ".end-pedido-sep{",
             "width:1.5px;",
             "background:#e0e0e0;",
@@ -786,15 +762,21 @@ var etiquetaHTML = blocosHTML
             "flex-shrink:0;",
           "}",
 
-          /* Número do pedido */
+          /* Ocultar separadores na grade */
+          ".end-pedidos-grid.grade .end-pedido-sep{display:none;}",
+
+          /* Número do pedido — nunca quebra linha */
           ".end-pedido-numero{",
             "font-weight:800;",
             "color:#E8620A;",
-            "line-height:1;",
+            "line-height:1.05;",
             "letter-spacing:-0.5px;",
             "font-family:'Syne',Arial,sans-serif;",
-            "margin-bottom:2mm;",
-            "word-break:break-all;",
+            "margin-bottom:1.5mm;",
+            "white-space:nowrap;",
+            "overflow:hidden;",
+            "text-overflow:ellipsis;",
+            "max-width:100%;",
           "}",
 
           /* Quantidade */
