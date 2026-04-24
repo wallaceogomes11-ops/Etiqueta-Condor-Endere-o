@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
 <title>Condor — Sistema de Estoque</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -154,13 +154,13 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#0c0c0f;color:
 .end-pedido-linha{
   display:flex;flex-direction:row;align-items:center;justify-content:center;
   flex:1;min-height:0;
-  gap:4mm;font-weight:800;font-family:'Syne',Arial,sans-serif;
+  gap:4mm;font-weight:800;font-family:'Barlow Condensed','Syne',Arial,sans-serif;
   color:#111;white-space:nowrap;overflow:hidden;line-height:1;
 }
-.end-linha-label{font-weight:700;color:#aaa;letter-spacing:2px;text-transform:uppercase;flex-shrink:0;}
-.end-linha-ped{font-weight:900;color:#E8620A;font-family:'Syne',Arial,sans-serif;flex-shrink:0;}
-.end-linha-val{font-weight:900;color:#111;font-family:'Syne',Arial,sans-serif;flex-shrink:0;}
-.end-linha-sep{color:#ccc;flex-shrink:0;}
+.end-linha-label{font-weight:700;color:#aaa;letter-spacing:2px;text-transform:uppercase;flex-shrink:0;font-family:'Barlow','DM Sans',Arial,sans-serif;}
+.end-linha-ped{font-weight:900;color:#E8620A;font-family:'Barlow Condensed','Syne',Arial,sans-serif;flex-shrink:0;letter-spacing:-0.5px;}
+.end-linha-val{font-weight:900;color:#111;font-family:'Barlow Condensed','Syne',Arial,sans-serif;flex-shrink:0;}
+.end-linha-sep{color:#ccc;flex-shrink:0;font-family:'Barlow Condensed',Arial,sans-serif;}
 .end-rodape{margin-top:3mm;display:flex;justify-content:space-between;align-items:center;border-top:2px solid #E8620A;padding-top:2.5mm;flex-shrink:0;}
 .end-rodape-data{font-size:7pt;color:#aaa;letter-spacing:1px;}
 .end-rodape-total{font-size:7.5pt;font-weight:700;color:#E8620A;letter-spacing:1px;text-transform:uppercase;}
@@ -644,28 +644,26 @@ function gerarEtiquetaPorEndereco() {
       var totalVol = itensFinal.reduce(function(acc, i){ return acc + i.volume; }, 0);
       var numPedidos = itensFinal.length;
 
-      // ── Calcular tamanhos de fonte proporcionalmente ao número de pedidos ──
-      // A4 = 297mm. Margens (8+7=15mm) + Header (~26mm) + Meta (~18mm) + Rodapé (~12mm) = ~71mm fixos.
-      // Área útil para as linhas de pedido ≈ 226mm.
-      // Cada linha ocupa essa área dividida pelo número de pedidos.
-      // Fonte = ~50% da altura da linha (deixa espaço para ascendentes e separadores).
-      // Cap de 34pt para não transbordar horizontalmente no A4.
-      var areaUtilMM = 226;
+      // ── Calcular tamanho de fonte ao máximo seguro dentro do A4 ──
+      // A4 = 297mm. Espaços fixos: margens(13mm) + header(25mm) + meta(18mm) + rodapé(11mm) = ~67mm
+      // Área útil para as linhas de pedido ≈ 230mm.
+      // line-height: 1.0 → fonte ocupa ~100% da linha. Damos 88% do slot (folga de 12%).
+      // Barlow Condensed é estreita → cap horizontal pode ser mais alto: 38pt max.
+      var areaUtilMM = 230;
       var alturaPorLinhaMM = areaUtilMM / numPedidos;
-      var fonteSizePt = Math.floor(alturaPorLinhaMM * 2.835 * 0.50);
-      if (fonteSizePt > 34) fonteSizePt = 34;
+      var fonteSizePt = Math.floor(alturaPorLinhaMM * 2.835 * 0.82);
+      if (fonteSizePt > 38) fonteSizePt = 38;
       if (fonteSizePt < 6)  fonteSizePt = 6;
 
-      var fonteLinha  = fonteSizePt + "pt";
-      var fonteLabel  = Math.max(6, Math.floor(fonteSizePt * 0.42)) + "pt";
-      var paddingLinha = "0";
+      var fonteLinha = fonteSizePt + "pt";
+      var fonteLabel = Math.max(6, Math.floor(fonteSizePt * 0.46)) + "pt";
 
       // ── Montar linhas de pedidos (formato horizontal: PED: X  QTD: Y  VOL: Z) ──
       var blocosHTML = itensFinal.map(function(item){
         var qtdStr = item.quantidade > 0 ? item.quantidade : 0;
         var volStr = item.volume     > 0 ? item.volume     : 0;
         return (
-          '<div class="end-pedido-linha" style="padding:' + paddingLinha + ';font-size:' + fonteLinha + ';">' +
+          '<div class="end-pedido-linha" style="font-size:' + fonteLinha + ';">' +
             '<span class="end-linha-label" style="font-size:' + fonteLabel + ';">PED:</span>' +
             '<span class="end-linha-ped">'  + escapeHTML(item.pedido) + '</span>' +
             '<span class="end-linha-sep">·</span>' +
@@ -717,98 +715,104 @@ function gerarEtiquetaPorEndereco() {
           "@page{size:A4 portrait;margin:0;}",
           "html{width:210mm;height:297mm;overflow:hidden;}",
           "body{",
-            "font-family:'DM Sans',Arial,sans-serif;",
+            "font-family:'Barlow','DM Sans',Arial,sans-serif;",
             "background:#fff;color:#1a1a1a;",
             "width:210mm;height:297mm;",
             "overflow:hidden;",
           "}",
 
-          /* Container principal — exatamente o A4, sem transbordar */
+          /* Container exato do A4 — margens mínimas para maximizar conteúdo */
           ".etiqueta-end{",
-            "width:210mm;",
-            "height:297mm;",
+            "width:210mm;height:297mm;",
             "background:#fff;",
-            "padding:7mm 11mm 6mm;",
-            "display:flex;",
-            "flex-direction:column;",
+            "padding:6mm 10mm 5mm;",
+            "display:flex;flex-direction:column;",
             "overflow:hidden;",
           "}",
 
-          /* Cabeçalho fixo */
+          /* Cabeçalho compacto */
           ".etiqueta-header{",
             "display:flex;align-items:center;justify-content:space-between;",
-            "border-bottom:3px solid #E8620A;padding-bottom:3mm;margin-bottom:4mm;",
+            "border-bottom:3px solid #E8620A;padding-bottom:2.5mm;margin-bottom:3mm;",
             "flex-shrink:0;",
           "}",
-          ".etiqueta-header img{height:13mm;object-fit:contain;}",
-          ".etiqueta-titulo h1{font-size:13pt;font-weight:900;color:#E8620A;text-transform:uppercase;text-align:right;font-family:'Syne',Arial,sans-serif;}",
-          ".etiqueta-titulo p{font-size:6.5pt;color:#999;letter-spacing:2px;text-transform:uppercase;text-align:right;margin-top:1mm;}",
+          ".etiqueta-header img{height:11mm;object-fit:contain;}",
+          ".etiqueta-titulo h1{font-size:11pt;font-weight:900;color:#E8620A;text-transform:uppercase;text-align:right;font-family:'Barlow Condensed',Arial,sans-serif;letter-spacing:1.5px;}",
+          ".etiqueta-titulo p{font-size:5.5pt;color:#bbb;letter-spacing:2px;text-transform:uppercase;text-align:right;margin-top:1mm;font-family:'Barlow',Arial,sans-serif;}",
 
-          /* Bloco de metadados fixo */
-          ".end-meta{display:flex;gap:3mm;margin-bottom:4mm;flex-shrink:0;}",
-          ".end-meta-bloco{flex:1;border:1.5px solid #e8e8e8;border-radius:5px;padding:2.5mm 4mm;background:#fafafa;}",
+          /* Metadados compactos */
+          ".end-meta{display:flex;gap:3mm;margin-bottom:3mm;flex-shrink:0;}",
+          ".end-meta-bloco{flex:1;border:1.5px solid #e8e8e8;border-radius:4px;padding:2mm 4mm;background:#fafafa;}",
           ".end-meta-bloco.destaque{border-color:#E8620A;background:#fff5f0;}",
-          ".end-meta-label{font-size:6pt;font-weight:700;color:#E8620A;letter-spacing:2px;text-transform:uppercase;margin-bottom:1mm;}",
-          ".end-meta-valor{font-size:12pt;font-weight:800;color:#111;line-height:1.1;}",
+          ".end-meta-label{font-size:5.5pt;font-weight:700;color:#E8620A;letter-spacing:2px;text-transform:uppercase;margin-bottom:1mm;font-family:'Barlow',Arial,sans-serif;}",
+          ".end-meta-valor{font-size:11pt;font-weight:800;color:#111;line-height:1;font-family:'Barlow Condensed',Arial,sans-serif;letter-spacing:0.5px;}",
 
-          /* Lista de pedidos — flex:1 ocupa EXATAMENTE o espaço restante */
+          /* Área de pedidos — ocupa TODO o espaço restante */
           ".end-pedidos-lista{",
-            "flex:1;",
-            "min-height:0;",
-            "display:flex;",
-            "flex-direction:column;",
+            "flex:1;min-height:0;",
+            "display:flex;flex-direction:column;",
             "justify-content:space-around;",
             "overflow:hidden;",
           "}",
 
-          /* Separador fino entre linhas */
-          ".end-linha-div{height:1px;background:#ebebeb;flex-shrink:0;}",
+          /* Separador fininho */
+          ".end-linha-div{height:0.5px;background:#e0e0e0;flex-shrink:0;}",
 
-          /* Linha horizontal: PED · QTD · VOL */
+          /* Linha de pedido — Barlow Condensed, máximo tamanho */
           ".end-pedido-linha{",
-            "display:flex;",
-            "flex-direction:row;",
-            "align-items:center;",
-            "justify-content:center;",
-            "flex:1;",
-            "min-height:0;",
-            "gap:4mm;",
+            "display:flex;flex-direction:row;",
+            "align-items:center;justify-content:center;",
+            "flex:1;min-height:0;",
+            "gap:5mm;",
+            "font-family:'Barlow Condensed',Arial,sans-serif;",
             "font-weight:800;",
-            "font-family:'Syne',Arial,sans-serif;",
             "color:#111;",
-            "white-space:nowrap;",
-            "overflow:hidden;",
+            "white-space:nowrap;overflow:hidden;",
             "line-height:1;",
+            "letter-spacing:0.5px;",
           "}",
 
-          /* Labels cinzas */
-          ".end-linha-label{font-weight:700;color:#aaa;letter-spacing:2px;text-transform:uppercase;flex-shrink:0;}",
-
-          /* Número do pedido — laranja */
-          ".end-linha-ped{font-weight:900;color:#E8620A;font-family:'Syne',Arial,sans-serif;flex-shrink:0;}",
-
-          /* Valores numéricos */
-          ".end-linha-val{font-weight:900;color:#111;font-family:'Syne',Arial,sans-serif;flex-shrink:0;}",
-
-          /* Ponto separador */
-          ".end-linha-sep{color:#ccc;flex-shrink:0;}",
-
-          /* Rodapé fixo */
-          ".end-rodape{",
-            "margin-top:3mm;",
-            "display:flex;justify-content:space-between;align-items:center;",
-            "border-top:2px solid #E8620A;padding-top:2.5mm;",
+          /* Labels PED / QTD / VOL */
+          ".end-linha-label{",
+            "font-family:'Barlow',Arial,sans-serif;",
+            "font-weight:700;color:#bbb;",
+            "letter-spacing:2px;text-transform:uppercase;",
             "flex-shrink:0;",
           "}",
-          ".end-rodape-data{font-size:7pt;color:#aaa;letter-spacing:1px;}",
-          ".end-rodape-total{font-size:7.5pt;font-weight:700;color:#E8620A;letter-spacing:1px;text-transform:uppercase;}",
+
+          /* Número do pedido — laranja destaque */
+          ".end-linha-ped{",
+            "font-family:'Barlow Condensed',Arial,sans-serif;",
+            "font-weight:900;color:#E8620A;",
+            "flex-shrink:0;",
+          "}",
+
+          /* Valores QTD e VOL */
+          ".end-linha-val{",
+            "font-family:'Barlow Condensed',Arial,sans-serif;",
+            "font-weight:900;color:#111;",
+            "flex-shrink:0;",
+          "}",
+
+          /* Separador · */
+          ".end-linha-sep{color:#ddd;flex-shrink:0;}",
+
+          /* Rodapé mínimo */
+          ".end-rodape{",
+            "margin-top:2.5mm;",
+            "display:flex;justify-content:space-between;align-items:center;",
+            "border-top:2px solid #E8620A;padding-top:2mm;",
+            "flex-shrink:0;",
+          "}",
+          ".end-rodape-data{font-size:6pt;color:#bbb;letter-spacing:1px;font-family:'Barlow',Arial,sans-serif;}",
+          ".end-rodape-total{font-size:6.5pt;font-weight:700;color:#E8620A;letter-spacing:1px;text-transform:uppercase;font-family:'Barlow',Arial,sans-serif;}",
 
           "@media print{html,body{overflow:hidden;}}"
         ].join("");
 
         var htmlDoc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/>' +
           '<title>Endereço ' + escapeHTML(endereco.toUpperCase()) + ' - Condor</title>' +
-          '<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;600;800&display=swap" rel="stylesheet">' +
+          '<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">' +
           '<style>' + estilosEnd + '</style>' +
           '</head><body>' +
           '<div class="etiqueta-end">' + document.getElementById("etiquetaEndConteudo").innerHTML + '</div>' +
