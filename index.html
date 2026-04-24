@@ -145,18 +145,42 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#0c0c0f;color:
 .end-meta-bloco.destaque{border-color:#E8620A;background:#fff5f0;}
 .end-meta-label{font-size:6pt;font-weight:700;color:#E8620A;letter-spacing:2px;text-transform:uppercase;margin-bottom:1.5mm;}
 .end-meta-valor{font-size:13pt;font-weight:800;color:#111;line-height:1.1;}
-.end-pedidos-grid{flex:1;display:flex;flex-direction:row;align-items:stretch;overflow:hidden;}
-.end-pedidos-grid.grade{display:grid;grid-template-columns:1fr 1fr;align-items:stretch;gap:0;overflow:hidden;}
-.end-pedido-item{flex:1;display:flex;flex-direction:row;align-items:center;justify-content:center;text-align:center;padding:2mm;gap:3mm;overflow:hidden;}
+/* ── Grade de pedidos ── */
+.end-pedidos-grid{flex:1;display:flex;flex-direction:column;align-items:stretch;overflow:hidden;}
+.end-pedidos-grid.grade{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;align-items:stretch;gap:0;overflow:hidden;}
+/* Célula: layout HORIZONTAL  pedido | qtd | vol */
+.end-pedido-item{
+  flex:1;display:flex;flex-direction:row;align-items:center;justify-content:center;
+  text-align:center;padding:2mm 3mm;gap:0;overflow:hidden;min-height:0;min-width:0;
+}
 .end-pedidos-grid.grade .end-pedido-item{border:0.5px solid #ebebeb;overflow:hidden;}
-.end-pedido-sep{width:1.5px;background:#e0e0e0;margin:3mm 0;flex-shrink:0;}
+.end-pedido-sep{height:1.5px;background:#e0e0e0;margin:0 3mm;flex-shrink:0;}
 .end-pedidos-grid.grade .end-pedido-sep{display:none;}
-.end-pedido-col{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;}
+/* Seção do número do pedido — lado esquerdo */
+.end-pedido-secpedido{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  flex:2;min-width:0;padding:0 2mm;
+}
+/* Número do pedido: word-break para nunca truncar */
+.end-pedido-numero{
+  font-weight:800;color:#D45500;line-height:1.05;letter-spacing:-0.3px;
+  font-family:'IBM Plex Sans',Arial,sans-serif;
+  word-break:break-all;white-space:normal;
+  width:100%;text-align:center;
+}
+/* Separador vertical entre seções */
+.end-pedido-vsep{width:1.5px;background:#e0e0e0;align-self:stretch;margin:2mm 0;flex-shrink:0;}
+/* Seção QTD e VOL — lado direito */
+.end-pedido-secvals{
+  display:flex;flex-direction:row;align-items:center;justify-content:center;
+  flex:3;min-width:0;gap:0;
+}
+.end-pedido-col{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;min-width:0;padding:0 2mm;}
 .end-pedido-col-sep{width:1px;background:#e0e0e0;align-self:stretch;margin:1mm 0;flex-shrink:0;}
-.end-pedido-numero{font-weight:800;color:#D45500;line-height:1.05;letter-spacing:-0.5px;font-family:'IBM Plex Sans',Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+.end-pedido-numero-sublabel{font-weight:700;color:#aaa;letter-spacing:1.5px;text-transform:uppercase;font-family:'IBM Plex Sans',Arial,sans-serif;white-space:nowrap;margin-top:0.5mm;}
 .end-pedido-qtd{font-weight:800;color:#111;line-height:1;font-family:'IBM Plex Sans',Arial,sans-serif;}
 .end-pedido-vol{font-weight:800;color:#555;line-height:1;font-family:'IBM Plex Sans',Arial,sans-serif;}
-.end-pedido-label{font-weight:700;color:#aaa;letter-spacing:2px;text-transform:uppercase;margin-top:1mm;font-family:'IBM Plex Sans',Arial,sans-serif;}
+.end-pedido-label{font-weight:700;color:#aaa;letter-spacing:1.5px;text-transform:uppercase;margin-top:0.5mm;font-family:'IBM Plex Sans',Arial,sans-serif;white-space:nowrap;}
 .end-rodape{margin-top:3mm;display:flex;justify-content:space-between;align-items:center;border-top:2px solid #E8620A;padding-top:2.5mm;flex-shrink:0;}
 .end-rodape-data{font-size:7pt;color:#aaa;letter-spacing:1px;}
 .end-rodape-total{font-size:8pt;font-weight:700;color:#E8620A;letter-spacing:1px;text-transform:uppercase;}
@@ -632,59 +656,57 @@ function gerarEtiquetaPorEndereco() {
       var totalGeral = itensFinal.reduce(function(acc, i){ return acc + i.quantidade; }, 0);
       var numPedidos = itensFinal.length;
 
-      // ── Tabela de tipografia — layout VERTICAL por célula ──
-      // Área útil pedidos: 148mm - ~36mm (header+meta+rodapé) ≈ 112mm
-      // Grade sempre 2 colunas para N≥3; linha única para N=1,2
-      // Cada célula: pedido (quebra linha) em cima + QTD|VOL embaixo lado a lado
+      // ── Tipografia dinâmica — layout HORIZONTAL por célula ──
+      // Layout: [PEDIDO] | [QTD] | [VOL]  (tudo na mesma linha horizontal)
+      // Área útil pedidos: 148mm - ~40mm (header+meta+rodapé) ≈ 108mm de altura
+      // Grade: 2 colunas para N≥3, 1 coluna para N=1,2
       var usarGrade = numPedidos >= 3;
-      var numLinhas = usarGrade ? Math.ceil(numPedidos / 2) : 1;
+      var numLinhas = usarGrade ? Math.ceil(numPedidos / 2) : numPedidos;
 
-      // fp = fonte do número do pedido | fv = fonte dos valores QTD/VOL | fl = fonte labels
-      var fp, fv, fl, pad;
+      // Altura disponível por célula (em pt; 1mm ≈ 2.835pt)
+      // 108mm disponíveis / numLinhas  → altura por célula
+      var alturaCelulaMm = Math.floor(108 / numLinhas);
 
-      if (numPedidos === 1) {
-        fp = "56pt"; fv = "72pt"; fl = "10pt"; pad = "5mm 8mm";
-      } else if (numPedidos === 2) {
-        fp = "36pt"; fv = "52pt"; fl = "9pt";  pad = "4mm 6mm";
-      } else if (numPedidos <= 4) {
-        // 2×2: ~56mm/célula
-        fp = "22pt"; fv = "32pt"; fl = "8pt";  pad = "3mm 4mm";
-      } else if (numPedidos <= 6) {
-        // 2×3: ~37mm/célula
-        fp = "15pt"; fv = "22pt"; fl = "7pt";  pad = "2mm 3mm";
-      } else if (numPedidos <= 10) {
-        // 2×5: ~22mm/célula
-        fp = "11pt"; fv = "15pt"; fl = "6pt";  pad = "1.5mm 2mm";
-      } else if (numPedidos <= 16) {
-        // 2×8: ~14mm/célula
-        fp = "8pt";  fv = "11pt"; fl = "5.5pt"; pad = "1mm 1.5mm";
-      } else {
-        fp = "7pt";  fv = "9pt";  fl = "5pt";  pad = "0.5mm 1mm";
-      }
+      // fp = fonte pedido | fv = fonte QTD/VOL | fl = labels | pad = padding célula
+      // Regra: fp ≈ 45% da altura da célula, fv ≈ 55%, nunca maior que limites estéticos
+      var ptPorMm = 2.835;
+      var fpRaw = Math.round(alturaCelulaMm * 0.38 * ptPorMm);
+      var fvRaw = Math.round(alturaCelulaMm * 0.48 * ptPorMm);
+      var flRaw = Math.round(alturaCelulaMm * 0.13 * ptPorMm);
 
-      // ── Montar blocos — layout VERTICAL: pedido em cima, qtd+vol embaixo ──
+      // Limites: mínimo legível e máximo estético
+      var fp = Math.min(Math.max(fpRaw, 7), 52) + "pt";
+      var fv = Math.min(Math.max(fvRaw, 8), 68) + "pt";
+      var fl = Math.min(Math.max(flRaw, 5), 11) + "pt";
+      var pad = alturaCelulaMm > 40 ? "4mm 5mm" :
+                alturaCelulaMm > 25 ? "2mm 3mm" :
+                alturaCelulaMm > 15 ? "1.5mm 2mm" : "1mm 1.5mm";
+
+      // ── Montar blocos — layout HORIZONTAL: pedido | sep | qtd | sep | vol ──
       var blocosHTML = itensFinal.map(function(item){
         var qtdStr = item.quantidade > 0 ? item.quantidade : "—";
         var volStr = item.volume > 0 ? item.volume : "—";
         return (
           '<div class="end-pedido-item" style="padding:' + pad + '">' +
-            // Número do pedido — quebra linha, nunca trunca
-            '<div class="end-pedido-numero" style="font-size:' + fp + '">' +
-              escapeHTML(item.pedido) +
+            // Seção do número do pedido (esquerda)
+            '<div class="end-pedido-secpedido">' +
+              '<div class="end-pedido-numero" style="font-size:' + fp + '">' +
+                escapeHTML(item.pedido) +
+              '</div>' +
+              '<div class="end-pedido-numero-sublabel" style="font-size:' + fl + '">PEDIDO</div>' +
             '</div>' +
-            '<div class="end-pedido-sublabel" style="font-size:' + fl + '">PEDIDO</div>' +
-            // Separador horizontal
-            '<div class="end-pedido-hsep"></div>' +
-            // Linha inferior: QTD | VOL
-            '<div class="end-pedido-row">' +
+            // Separador vertical
+            '<div class="end-pedido-vsep"></div>' +
+            // Seção QTD e VOL (direita)
+            '<div class="end-pedido-secvals">' +
               '<div class="end-pedido-col">' +
                 '<div class="end-pedido-qtd" style="font-size:' + fv + '">' + qtdStr + '</div>' +
-                '<div class="end-pedido-sublabel" style="font-size:' + fl + '">QTD</div>' +
+                '<div class="end-pedido-label" style="font-size:' + fl + '">QTD</div>' +
               '</div>' +
               '<div class="end-pedido-col-sep"></div>' +
               '<div class="end-pedido-col">' +
                 '<div class="end-pedido-vol" style="font-size:' + fv + '">' + volStr + '</div>' +
-                '<div class="end-pedido-sublabel" style="font-size:' + fl + '">VOL</div>' +
+                '<div class="end-pedido-label" style="font-size:' + fl + '">VOL</div>' +
               '</div>' +
             '</div>' +
           '</div>'
@@ -724,7 +746,7 @@ function gerarEtiquetaPorEndereco() {
 
       setTimeout(function(){
 
-        // ── CSS do blob de impressão — layout VERTICAL — v3.5 ──
+        // ── CSS do blob de impressão — layout HORIZONTAL — v4.0 ──
         var estilosEnd = [
           "* { box-sizing: border-box; margin: 0; padding: 0; }",
           "body { font-family: 'DM Sans', Arial, sans-serif; background: #fff; color: #1a1a1a; }",
@@ -755,69 +777,81 @@ function gerarEtiquetaPorEndereco() {
           ".end-meta-valor { font-size: 12pt; font-weight: 800; color: #111; line-height: 1.1; }",
 
           /* Grade de pedidos — preenche espaço restante */
-          ".end-pedidos-grid { flex: 1; display: flex; flex-direction: row;",
+          ".end-pedidos-grid { flex: 1; display: flex; flex-direction: column;",
           "  align-items: stretch; overflow: hidden; min-height: 0; }",
           ".end-pedidos-grid.grade { display: grid; grid-template-columns: 1fr 1fr;",
           "  grid-auto-rows: 1fr; align-items: stretch; overflow: hidden; min-height: 0; }",
 
-          /* Separador vertical entre itens (modo linha) */
-          ".end-pedido-sep { width: 1.5px; background: #e0e0e0; margin: 3mm 0; flex-shrink: 0; }",
+          /* Separador horizontal entre linhas (modo não-grade) */
+          ".end-pedido-sep { height: 1.5px; background: #e0e0e0; margin: 0 3mm; flex-shrink: 0; }",
           ".end-pedidos-grid.grade .end-pedido-sep { display: none; }",
 
-          /* ── Célula de pedido — layout VERTICAL ─────────────────
-             ┌────────────────────┐
-             │  014-XXXXX         │  ← word-break: break-all, NUNCA trunca
-             │  PEDIDO            │
-             │ ─────────────────  │
-             │  534    │   19     │
-             │  QTD    │   VOL    │
-             └────────────────────┘  */
+          /* ── Célula de pedido — layout HORIZONTAL ────────────────────
+             ┌──────────────────┬──────────┬──────────┐
+             │   016-15         │   25     │    4     │
+             │   PEDIDO         │   QTD    │   VOL    │
+             └──────────────────┴──────────┴──────────┘  */
           ".end-pedido-item {",
           "  flex: 1;",
-          "  display: flex; flex-direction: column;",
+          "  display: flex; flex-direction: row;",
           "  align-items: center; justify-content: center;",
-          "  text-align: center;",
-          "  overflow: hidden; min-height: 0; min-width: 0;",
+          "  text-align: center; overflow: hidden;",
+          "  min-height: 0; min-width: 0;",
           "}",
           ".end-pedidos-grid.grade .end-pedido-item { border: 0.5px solid #ebebeb; }",
 
-          /* Número do pedido — QUEBRA LINHA em vez de truncar */
+          /* Seção do número do pedido (esquerda) — word-break para nunca truncar */
+          ".end-pedido-secpedido {",
+          "  display: flex; flex-direction: column;",
+          "  align-items: center; justify-content: center;",
+          "  flex: 2; min-width: 0; padding: 0 2mm;",
+          "}",
+
+          /* Número do pedido */
           ".end-pedido-numero {",
-          "  font-weight: 800; color: #D45500; line-height: 1.1;",
+          "  font-weight: 800; color: #D45500; line-height: 1.05;",
           "  font-family: 'IBM Plex Sans', Arial, sans-serif;",
-          "  word-break: break-all; white-space: normal;",  /* ← correção principal */
+          "  word-break: break-all; white-space: normal;",
           "  width: 100%; text-align: center;",
           "}",
 
-          /* Label abaixo do pedido */
-          ".end-pedido-sublabel {",
-          "  font-weight: 700; color: #aaa; letter-spacing: 2px; text-transform: uppercase;",
+          /* Sublabel abaixo do pedido */
+          ".end-pedido-numero-sublabel {",
+          "  font-weight: 700; color: #aaa; letter-spacing: 1.5px; text-transform: uppercase;",
           "  font-family: 'IBM Plex Sans', Arial, sans-serif; white-space: nowrap;",
-          "  margin-bottom: 1.5mm;",
+          "  margin-top: 0.5mm;",
           "}",
 
-          /* Separador horizontal entre pedido e qtd/vol */
-          ".end-pedido-hsep { width: 60%; height: 1px; background: #e0e0e0;",
-          "  margin: 1.5mm 0; flex-shrink: 0; }",
+          /* Separador vertical entre pedido e qtd/vol */
+          ".end-pedido-vsep { width: 1.5px; background: #e0e0e0;",
+          "  align-self: stretch; margin: 2mm 0; flex-shrink: 0; }",
 
-          /* Linha inferior: QTD | VOL lado a lado */
-          ".end-pedido-row { display: flex; flex-direction: row;",
-          "  align-items: center; justify-content: center; gap: 0; }",
+          /* Seção QTD e VOL lado a lado (direita) */
+          ".end-pedido-secvals {",
+          "  display: flex; flex-direction: row;",
+          "  align-items: center; justify-content: center;",
+          "  flex: 3; min-width: 0; gap: 0;",
+          "}",
 
-          /* Cada coluna dentro da linha inferior */
+          /* Coluna individual QTD ou VOL */
           ".end-pedido-col { display: flex; flex-direction: column;",
           "  align-items: center; justify-content: center;",
-          "  padding: 0 3mm; min-width: 0; }",
+          "  flex: 1; min-width: 0; padding: 0 2mm; }",
 
           /* Separador vertical entre QTD e VOL */
           ".end-pedido-col-sep { width: 1px; background: #e0e0e0;",
-          "  height: 100%; min-height: 8mm; flex-shrink: 0; align-self: stretch; }",
+          "  align-self: stretch; margin: 1mm 0; flex-shrink: 0; }",
 
           /* Valores numéricos */
           ".end-pedido-qtd { font-weight: 800; color: #111; line-height: 1;",
           "  font-family: 'IBM Plex Sans', Arial, sans-serif; white-space: nowrap; }",
           ".end-pedido-vol { font-weight: 800; color: #555; line-height: 1;",
           "  font-family: 'IBM Plex Sans', Arial, sans-serif; white-space: nowrap; }",
+
+          /* Label abaixo de QTD e VOL */
+          ".end-pedido-label { font-weight: 700; color: #aaa; letter-spacing: 1.5px;",
+          "  text-transform: uppercase; font-family: 'IBM Plex Sans', Arial, sans-serif;",
+          "  white-space: nowrap; margin-top: 0.5mm; }",
 
           /* Rodapé */
           ".end-rodape { flex-shrink: 0; margin-top: 2mm; display: flex;",
