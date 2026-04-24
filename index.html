@@ -126,7 +126,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#0c0c0f;color:
   width:210mm;
   height:297mm;
   background:#fff;
-  padding:8mm 12mm 7mm;
+  padding:7mm 11mm 6mm;
   display:flex;
   flex-direction:column;
   color:#1a1a1a;
@@ -135,35 +135,35 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#0c0c0f;color:
 }
 .etiqueta-end .etiqueta-header{
   display:flex;align-items:center;justify-content:space-between;
-  border-bottom:4px solid #E8620A;padding-bottom:4mm;margin-bottom:5mm;
+  border-bottom:3px solid #E8620A;padding-bottom:3mm;margin-bottom:4mm;
   flex-shrink:0;
 }
-.etiqueta-end .etiqueta-header img{height:14mm;object-fit:contain;}
-.etiqueta-end .etiqueta-titulo h1{font-size:14pt;font-weight:900;color:#E8620A;text-transform:uppercase;text-align:right;font-family:'Syne',Arial,sans-serif;}
-.etiqueta-end .etiqueta-titulo p{font-size:7pt;color:#999;letter-spacing:2px;text-transform:uppercase;text-align:right;margin-top:1mm;}
-.end-meta{display:flex;gap:4mm;margin-bottom:5mm;flex-shrink:0;}
-.end-meta-bloco{flex:1;border:1.5px solid #e8e8e8;border-radius:6px;padding:3mm 5mm;background:#fafafa;}
+.etiqueta-end .etiqueta-header img{height:13mm;object-fit:contain;}
+.etiqueta-end .etiqueta-titulo h1{font-size:13pt;font-weight:900;color:#E8620A;text-transform:uppercase;text-align:right;font-family:'Syne',Arial,sans-serif;}
+.etiqueta-end .etiqueta-titulo p{font-size:6.5pt;color:#999;letter-spacing:2px;text-transform:uppercase;text-align:right;margin-top:1mm;}
+.end-meta{display:flex;gap:3mm;margin-bottom:4mm;flex-shrink:0;}
+.end-meta-bloco{flex:1;border:1.5px solid #e8e8e8;border-radius:5px;padding:2.5mm 4mm;background:#fafafa;}
 .end-meta-bloco.destaque{border-color:#E8620A;background:#fff5f0;}
-.end-meta-label{font-size:6.5pt;font-weight:700;color:#E8620A;letter-spacing:2px;text-transform:uppercase;margin-bottom:1.5mm;}
-.end-meta-valor{font-size:13pt;font-weight:800;color:#111;line-height:1.1;}
+.end-meta-label{font-size:6pt;font-weight:700;color:#E8620A;letter-spacing:2px;text-transform:uppercase;margin-bottom:1mm;}
+.end-meta-valor{font-size:12pt;font-weight:800;color:#111;line-height:1.1;}
 /* Lista vertical de pedidos — ocupa todo espaço restante */
-.end-pedidos-lista{flex:1;display:flex;flex-direction:column;justify-content:center;overflow:hidden;}
+.end-pedidos-lista{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:space-around;overflow:hidden;}
 /* Separador horizontal entre linhas */
-.end-linha-div{height:1px;background:#ebebeb;margin:0 2mm;flex-shrink:0;}
+.end-linha-div{height:1px;background:#ebebeb;flex-shrink:0;}
 /* Linha horizontal: PED: X · QTD: Y · VOL: Z */
 .end-pedido-linha{
   display:flex;flex-direction:row;align-items:center;justify-content:center;
-  gap:3mm;font-weight:800;font-family:'Syne',Arial,sans-serif;
-  color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  text-align:center;flex:1;min-height:0;
+  flex:1;min-height:0;
+  gap:4mm;font-weight:800;font-family:'Syne',Arial,sans-serif;
+  color:#111;white-space:nowrap;overflow:hidden;line-height:1;
 }
 .end-linha-label{font-weight:700;color:#aaa;letter-spacing:2px;text-transform:uppercase;flex-shrink:0;}
 .end-linha-ped{font-weight:900;color:#E8620A;font-family:'Syne',Arial,sans-serif;flex-shrink:0;}
 .end-linha-val{font-weight:900;color:#111;font-family:'Syne',Arial,sans-serif;flex-shrink:0;}
-.end-linha-sep{color:#ddd;font-size:0.8em;flex-shrink:0;}
-.end-rodape{margin-top:4mm;display:flex;justify-content:space-between;align-items:center;border-top:2px solid #E8620A;padding-top:3mm;flex-shrink:0;}
+.end-linha-sep{color:#ccc;flex-shrink:0;}
+.end-rodape{margin-top:3mm;display:flex;justify-content:space-between;align-items:center;border-top:2px solid #E8620A;padding-top:2.5mm;flex-shrink:0;}
 .end-rodape-data{font-size:7pt;color:#aaa;letter-spacing:1px;}
-.end-rodape-total{font-size:8pt;font-weight:700;color:#E8620A;letter-spacing:1px;text-transform:uppercase;}
+.end-rodape-total{font-size:7.5pt;font-weight:700;color:#E8620A;letter-spacing:1px;text-transform:uppercase;}
 
 @media print{
   html,body{overflow:visible;height:auto;background:#fff!important;}
@@ -645,29 +645,20 @@ function gerarEtiquetaPorEndereco() {
       var numPedidos = itensFinal.length;
 
       // ── Calcular tamanhos de fonte proporcionalmente ao número de pedidos ──
-      // Área útil do A4 para pedidos (descontando header, meta e rodapé): ~195mm altura
-      // Cada linha de pedido = 1 linha horizontal: PED: X  QTD: Y  VOL: Z
-      var fonteBase, fonteLinha, paddingLinha, fonteLabel;
+      // A4 = 297mm. Margens (8+7=15mm) + Header (~26mm) + Meta (~18mm) + Rodapé (~12mm) = ~71mm fixos.
+      // Área útil para as linhas de pedido ≈ 226mm.
+      // Cada linha ocupa essa área dividida pelo número de pedidos.
+      // Fonte = ~50% da altura da linha (deixa espaço para ascendentes e separadores).
+      // Cap de 34pt para não transbordar horizontalmente no A4.
+      var areaUtilMM = 226;
+      var alturaPorLinhaMM = areaUtilMM / numPedidos;
+      var fonteSizePt = Math.floor(alturaPorLinhaMM * 2.835 * 0.50);
+      if (fonteSizePt > 34) fonteSizePt = 34;
+      if (fonteSizePt < 6)  fonteSizePt = 6;
 
-      if (numPedidos === 1) {
-        fonteBase = "54pt"; fonteLinha = "54pt"; paddingLinha = "0"; fonteLabel = "14pt";
-      } else if (numPedidos === 2) {
-        fonteBase = "36pt"; fonteLinha = "36pt"; paddingLinha = "6mm 0"; fonteLabel = "11pt";
-      } else if (numPedidos === 3) {
-        fonteBase = "26pt"; fonteLinha = "26pt"; paddingLinha = "4mm 0"; fonteLabel = "9pt";
-      } else if (numPedidos === 4) {
-        fonteBase = "20pt"; fonteLinha = "20pt"; paddingLinha = "3mm 0"; fonteLabel = "8pt";
-      } else if (numPedidos === 5) {
-        fonteBase = "16pt"; fonteLinha = "16pt"; paddingLinha = "2.5mm 0"; fonteLabel = "7.5pt";
-      } else if (numPedidos <= 7) {
-        fonteBase = "13pt"; fonteLinha = "13pt"; paddingLinha = "2mm 0"; fonteLabel = "7pt";
-      } else if (numPedidos <= 10) {
-        fonteBase = "10pt"; fonteLinha = "10pt"; paddingLinha = "1.5mm 0"; fonteLabel = "6.5pt";
-      } else if (numPedidos <= 15) {
-        fonteBase = "8pt";  fonteLinha = "8pt";  paddingLinha = "1mm 0";   fonteLabel = "6pt";
-      } else {
-        fonteBase = "6.5pt"; fonteLinha = "6.5pt"; paddingLinha = "0.5mm 0"; fonteLabel = "5.5pt";
-      }
+      var fonteLinha  = fonteSizePt + "pt";
+      var fonteLabel  = Math.max(6, Math.floor(fonteSizePt * 0.42)) + "pt";
+      var paddingLinha = "0";
 
       // ── Montar linhas de pedidos (formato horizontal: PED: X  QTD: Y  VOL: Z) ──
       var blocosHTML = itensFinal.map(function(item){
@@ -723,121 +714,96 @@ function gerarEtiquetaPorEndereco() {
       setTimeout(function(){
         var estilosEnd = [
           "*{box-sizing:border-box;margin:0;padding:0;}",
-          "html,body{width:210mm;height:297mm;overflow:hidden;}",
-          "body{font-family:'DM Sans',Arial,sans-serif;background:#fff;color:#1a1a1a;}",
+          "@page{size:A4 portrait;margin:0;}",
+          "html{width:210mm;height:297mm;overflow:hidden;}",
+          "body{",
+            "font-family:'DM Sans',Arial,sans-serif;",
+            "background:#fff;color:#1a1a1a;",
+            "width:210mm;height:297mm;",
+            "overflow:hidden;",
+          "}",
 
-          /* Layout principal da etiqueta — A4 completo */
+          /* Container principal — exatamente o A4, sem transbordar */
           ".etiqueta-end{",
             "width:210mm;",
             "height:297mm;",
             "background:#fff;",
-            "padding:8mm 12mm 7mm;",
+            "padding:7mm 11mm 6mm;",
             "display:flex;",
             "flex-direction:column;",
             "overflow:hidden;",
           "}",
 
-          /* Cabeçalho */
+          /* Cabeçalho fixo */
           ".etiqueta-header{",
             "display:flex;align-items:center;justify-content:space-between;",
-            "border-bottom:4px solid #E8620A;padding-bottom:4mm;margin-bottom:5mm;",
+            "border-bottom:3px solid #E8620A;padding-bottom:3mm;margin-bottom:4mm;",
             "flex-shrink:0;",
           "}",
-          ".etiqueta-header img{height:14mm;object-fit:contain;}",
-          ".etiqueta-titulo h1{font-size:14pt;font-weight:900;color:#E8620A;text-transform:uppercase;text-align:right;font-family:'Syne',Arial,sans-serif;}",
-          ".etiqueta-titulo p{font-size:7pt;color:#999;letter-spacing:2px;text-transform:uppercase;text-align:right;margin-top:1mm;}",
+          ".etiqueta-header img{height:13mm;object-fit:contain;}",
+          ".etiqueta-titulo h1{font-size:13pt;font-weight:900;color:#E8620A;text-transform:uppercase;text-align:right;font-family:'Syne',Arial,sans-serif;}",
+          ".etiqueta-titulo p{font-size:6.5pt;color:#999;letter-spacing:2px;text-transform:uppercase;text-align:right;margin-top:1mm;}",
 
-          /* Linha de metadados */
-          ".end-meta{display:flex;gap:4mm;margin-bottom:5mm;flex-shrink:0;}",
-          ".end-meta-bloco{flex:1;border:1.5px solid #e8e8e8;border-radius:6px;padding:3mm 5mm;background:#fafafa;}",
+          /* Bloco de metadados fixo */
+          ".end-meta{display:flex;gap:3mm;margin-bottom:4mm;flex-shrink:0;}",
+          ".end-meta-bloco{flex:1;border:1.5px solid #e8e8e8;border-radius:5px;padding:2.5mm 4mm;background:#fafafa;}",
           ".end-meta-bloco.destaque{border-color:#E8620A;background:#fff5f0;}",
-          ".end-meta-label{font-size:6.5pt;font-weight:700;color:#E8620A;letter-spacing:2px;text-transform:uppercase;margin-bottom:1.5mm;}",
-          ".end-meta-valor{font-size:13pt;font-weight:800;color:#111;line-height:1.1;}",
+          ".end-meta-label{font-size:6pt;font-weight:700;color:#E8620A;letter-spacing:2px;text-transform:uppercase;margin-bottom:1mm;}",
+          ".end-meta-valor{font-size:12pt;font-weight:800;color:#111;line-height:1.1;}",
 
-          /* Lista de pedidos — ocupa todo o espaço restante */
+          /* Lista de pedidos — flex:1 ocupa EXATAMENTE o espaço restante */
           ".end-pedidos-lista{",
             "flex:1;",
+            "min-height:0;",
             "display:flex;",
             "flex-direction:column;",
-            "justify-content:center;",
+            "justify-content:space-around;",
             "overflow:hidden;",
           "}",
 
-          /* Linha de separação entre pedidos */
-          ".end-linha-div{",
-            "height:1px;",
-            "background:#ebebeb;",
-            "margin:0 2mm;",
-            "flex-shrink:0;",
-          "}",
+          /* Separador fino entre linhas */
+          ".end-linha-div{height:1px;background:#ebebeb;flex-shrink:0;}",
 
-          /* Linha horizontal de pedido: PED: X  QTD: Y  VOL: Z */
+          /* Linha horizontal: PED · QTD · VOL */
           ".end-pedido-linha{",
             "display:flex;",
             "flex-direction:row;",
             "align-items:center;",
             "justify-content:center;",
-            "gap:3mm;",
+            "flex:1;",
+            "min-height:0;",
+            "gap:4mm;",
             "font-weight:800;",
             "font-family:'Syne',Arial,sans-serif;",
             "color:#111;",
             "white-space:nowrap;",
             "overflow:hidden;",
-            "text-overflow:ellipsis;",
-            "text-align:center;",
-            "flex:1;",
-            "min-height:0;",
+            "line-height:1;",
           "}",
 
-          /* Label (PED, QTD, VOL) */
-          ".end-linha-label{",
-            "font-weight:700;",
-            "color:#aaa;",
-            "letter-spacing:2px;",
-            "text-transform:uppercase;",
-            "flex-shrink:0;",
-          "}",
+          /* Labels cinzas */
+          ".end-linha-label{font-weight:700;color:#aaa;letter-spacing:2px;text-transform:uppercase;flex-shrink:0;}",
 
-          /* Valor do número do pedido */
-          ".end-linha-ped{",
-            "font-weight:900;",
-            "color:#E8620A;",
-            "font-family:'Syne',Arial,sans-serif;",
-            "flex-shrink:0;",
-          "}",
+          /* Número do pedido — laranja */
+          ".end-linha-ped{font-weight:900;color:#E8620A;font-family:'Syne',Arial,sans-serif;flex-shrink:0;}",
 
-          /* Valores numéricos (QTD e VOL) */
-          ".end-linha-val{",
-            "font-weight:900;",
-            "color:#111;",
-            "font-family:'Syne',Arial,sans-serif;",
-            "flex-shrink:0;",
-          "}",
+          /* Valores numéricos */
+          ".end-linha-val{font-weight:900;color:#111;font-family:'Syne',Arial,sans-serif;flex-shrink:0;}",
 
-          /* Separador visual entre grupos de campos */
-          ".end-linha-sep{",
-            "color:#ddd;",
-            "font-size:0.8em;",
-            "flex-shrink:0;",
-          "}",
+          /* Ponto separador */
+          ".end-linha-sep{color:#ccc;flex-shrink:0;}",
 
-          /* Rodapé */
+          /* Rodapé fixo */
           ".end-rodape{",
-            "margin-top:4mm;",
-            "display:flex;",
-            "justify-content:space-between;",
-            "align-items:center;",
-            "border-top:2px solid #E8620A;",
-            "padding-top:3mm;",
+            "margin-top:3mm;",
+            "display:flex;justify-content:space-between;align-items:center;",
+            "border-top:2px solid #E8620A;padding-top:2.5mm;",
             "flex-shrink:0;",
           "}",
           ".end-rodape-data{font-size:7pt;color:#aaa;letter-spacing:1px;}",
-          ".end-rodape-total{font-size:8pt;font-weight:700;color:#E8620A;letter-spacing:1px;text-transform:uppercase;}",
+          ".end-rodape-total{font-size:7.5pt;font-weight:700;color:#E8620A;letter-spacing:1px;text-transform:uppercase;}",
 
-          "@media print{",
-            "html,body{overflow:hidden;}",
-            "@page{size:A4;margin:0;}",
-          "}"
+          "@media print{html,body{overflow:hidden;}}"
         ].join("");
 
         var htmlDoc = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/>' +
