@@ -119,14 +119,13 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#0c0c0f;color:
 #etiqueta-qrcode canvas,#etiqueta-qrcode img{border:3px solid #111;border-radius:6px;padding:3px;}
 .qr-label-grande{font-size:8pt;color:#aaa;letter-spacing:2px;text-transform:uppercase;text-align:center;}
 
-/* ─── Etiqueta por Endereço (meia folha A4) ─── */
+/* ─── Etiqueta por Endereço (A4 completo) ─── */
 .etiqueta-end-wrapper{display:none;}
 .etiqueta-end{
   width:210mm;
-  min-height:148mm; /* metade do A4 */
-  max-height:148mm;
+  height:297mm;
   background:#fff;
-  padding:8mm 12mm;
+  padding:8mm 10mm 6mm;
   display:flex;
   flex-direction:column;
   color:#1a1a1a;
@@ -135,23 +134,72 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#0c0c0f;color:
 }
 .etiqueta-end .etiqueta-header{
   display:flex;align-items:center;justify-content:space-between;
-  border-bottom:4px solid #E8620A;padding-bottom:4mm;margin-bottom:5mm;
+  border-bottom:4px solid #E8620A;padding-bottom:4mm;margin-bottom:4mm;
+  flex-shrink:0;
 }
 .etiqueta-end .etiqueta-header img{height:14mm;object-fit:contain;}
 .etiqueta-end .etiqueta-titulo h1{font-size:14pt;font-weight:900;color:#E8620A;text-transform:uppercase;text-align:right;font-family:'Syne',Arial,sans-serif;}
 .etiqueta-end .etiqueta-titulo p{font-size:7pt;color:#999;letter-spacing:2px;text-transform:uppercase;text-align:right;margin-top:1mm;}
-.end-meta{display:flex;gap:4mm;margin-bottom:5mm;}
-.end-meta-bloco{flex:1;border:1.5px solid #e8e8e8;border-radius:6px;padding:3mm 4mm;background:#fafafa;}
+.end-meta{display:flex;gap:3mm;margin-bottom:4mm;flex-shrink:0;}
+.end-meta-bloco{flex:1;border:1.5px solid #e8e8e8;border-radius:6px;padding:2.5mm 4mm;background:#fafafa;}
 .end-meta-bloco.destaque{border-color:#E8620A;background:#fff5f0;}
-.end-meta-label{font-size:6pt;font-weight:700;color:#E8620A;letter-spacing:2px;text-transform:uppercase;margin-bottom:1.5mm;}
+.end-meta-label{font-size:6pt;font-weight:700;color:#E8620A;letter-spacing:2px;text-transform:uppercase;margin-bottom:1mm;}
 .end-meta-valor{font-size:13pt;font-weight:800;color:#111;line-height:1.1;}
-.end-pedidos-grid{flex:1;overflow:hidden;}
-.end-pedido-item{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2mm;border-right:1.5px solid #e0e0e0;border-bottom:1.5px solid #e0e0e0;}
-.end-pedido-sep{display:none;}
-.end-pedido-numero{font-weight:800;color:#E8620A;line-height:1;letter-spacing:-0.5px;font-family:'Syne',Arial,sans-serif;margin-bottom:2mm;word-break:break-all;}
-.end-pedido-qtd{font-weight:900;color:#111;line-height:1;font-family:'Syne',Arial,sans-serif;}
-.end-pedido-label{font-weight:700;color:#aaa;letter-spacing:3px;text-transform:uppercase;margin-top:1.5mm;}
-.end-rodape{margin-top:3mm;display:flex;justify-content:space-between;align-items:center;border-top:2px solid #E8620A;padding-top:2.5mm;}
+
+/* Grid: ocupa todo o espaço restante; colunas/linhas definidas inline pelo JS */
+.end-pedidos-grid{
+  flex:1;
+  min-height:0;
+  display:grid; /* colunas e linhas via style inline */
+}
+
+/* Cada célula: fechada, sem overflow, texto centralizado */
+.end-pedido-item{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  overflow:hidden;        /* texto nunca ultrapassa a célula */
+  padding:3mm;
+  border:1px solid #e0e0e0;
+  box-sizing:border-box;
+}
+
+/* Número do pedido: não quebra linha, corta se necessário */
+.end-pedido-numero{
+  font-weight:800;
+  color:#E8620A;
+  line-height:1;
+  letter-spacing:-0.5px;
+  font-family:'Syne',Arial,sans-serif;
+  white-space:nowrap;
+  overflow:hidden;
+  max-width:100%;
+}
+
+/* Quantidade */
+.end-pedido-qtd{
+  font-weight:900;
+  color:#111;
+  line-height:1;
+  font-family:'Syne',Arial,sans-serif;
+  white-space:nowrap;
+  overflow:hidden;
+  max-width:100%;
+}
+
+/* Label "QTD" */
+.end-pedido-label{
+  font-weight:700;
+  color:#aaa;
+  letter-spacing:3px;
+  text-transform:uppercase;
+  margin-top:1.5mm;
+  white-space:nowrap;
+}
+
+.end-rodape{flex-shrink:0;margin-top:3mm;display:flex;justify-content:space-between;align-items:center;border-top:2px solid #E8620A;padding-top:2.5mm;}
 .end-rodape-data{font-size:7pt;color:#aaa;letter-spacing:1px;}
 .end-rodape-total{font-size:8pt;font-weight:700;color:#E8620A;letter-spacing:1px;text-transform:uppercase;}
 
@@ -578,30 +626,29 @@ function gerarEtiquetaPorEndereco() {
         return;
       }
 
-      // ── Agrupar por PEDIDO + somar Quantidades ──
+      // ── Agrupar por PEDIDO + somar Quantidade e Volume separadamente ──
       var agrupado = {};
 
       registros.forEach(function(r){
-        var pedido     = findField(r, "PEDIDO") !== "—" ? findField(r, "PEDIDO") : findField(r, "Pedido");
+        var pedido = findField(r, "PEDIDO") !== "—" ? findField(r, "PEDIDO") : findField(r, "Pedido");
+
         var quantidade = parseFloat(
           (findField(r, "QUANTIDADE") !== "—" ? findField(r, "QUANTIDADE") : findField(r, "Quantidade"))
             .replace(/[^0-9.]/g,"")
         ) || 0;
 
-        // Fallback para campo VOLUME se QUANTIDADE não existir
-        if (quantidade === 0) {
-          quantidade = parseFloat(
-            (findField(r, "VOLUME") !== "—" ? findField(r, "VOLUME") : "0")
-              .replace(/[^0-9.]/g,"")
-          ) || 0;
-        }
+        var volume = parseFloat(
+          (findField(r, "VOLUME") !== "—" ? findField(r, "VOLUME") : "0")
+            .replace(/[^0-9.]/g,"")
+        ) || 0;
 
         if (!pedido || pedido === "—") pedido = "(sem pedido)";
 
         if (!agrupado[pedido]) {
-          agrupado[pedido] = { quantidade: 0 };
+          agrupado[pedido] = { quantidade: 0, volume: 0 };
         }
         agrupado[pedido].quantidade += quantidade;
+        agrupado[pedido].volume     += volume;
       });
 
       // ── Ordenar pedidos numericamente ──
@@ -611,78 +658,192 @@ function gerarEtiquetaPorEndereco() {
         return na !== nb ? na - nb : a.localeCompare(b);
       });
 
-      // ── Estrutura final: [{ pedido, quantidade }] ──
+      // ── Estrutura final: [{ pedido, quantidade, volume }] ──
       var itensFinal = pedidos.map(function(p){
-        return { pedido: p, quantidade: agrupado[p].quantidade };
+        return { pedido: p, quantidade: agrupado[p].quantidade, volume: agrupado[p].volume };
       });
 
       var totalGeral = itensFinal.reduce(function(acc, i){ return acc + i.quantidade; }, 0);
       var numPedidos = itensFinal.length;
 
-      // ══════════════════════════════════════════════════════
-      // SISTEMA DE GRID DINÂMICO — funciona para qualquer N
-      // ══════════════════════════════════════════════════════
+      // ══════════════════════════════════════════════════════════
+      // GRID DINÂMICO — A4 completo, células fechadas, fonte proporcional
+      // ══════════════════════════════════════════════════════════
 
-      // 1) Calcular colunas e linhas do grid
+      // 1) Colunas e linhas calculados por raiz quadrada
       var cols = Math.ceil(Math.sqrt(numPedidos));
       var rows = Math.ceil(numPedidos / cols);
 
-      // 2) Área disponível da etiqueta (meia folha A4 em px @96dpi)
-      //    210mm × 148mm → ~794px × ~559px
-      //    Descontando: header ~55px, meta ~50px, rodapé ~28px, padding 2×(6mm~23px)
-      var areaW = 794 - 2 * 45;  // largura útil (~704px)
-      var areaH = 559 - 55 - 50 - 28 - 46; // altura útil grid (~380px)
+      // 2) Dimensões reais disponíveis para o grid (A4 completo em mm)
+      //    A4 = 297mm altura, 210mm largura
+      //    Padding da etiqueta: 8mm top, 10mm lados, 6mm bottom
+      //    Header (logo+título+borda): ~22mm
+      //    Meta (endereço+pedidos): ~14mm
+      //    Rodapé: ~8mm
+      //    Soma fixa: 8+6 + 22 + 14 + 8 = 58mm
+      var gridHmm = 297 - 58;  // ~239mm disponível para o grid
+      var gridWmm = 210 - 20;  // ~190mm (descontando padding lateral)
 
-      var cellW = areaW / cols;
-      var cellH = areaH / rows;
+      // Dimensão de cada célula em mm
+      var cellHmm = gridHmm / rows;
+      var cellWmm = gridWmm / cols;
 
-      // 3) Tamanho máximo do texto do pedido (ex: "123456" → 6 chars)
+      // Converter mm → px para cálculo de fonte (@96dpi: 1mm = 3.7795px)
+      var mmToPx = 3.7795;
+      var cellHpx = cellHmm * mmToPx;
+      var cellWpx = cellWmm * mmToPx;
+
+      // 3) Texto mais longo entre todos os pedidos e quantidades
       var maxPedidoLen = itensFinal.reduce(function(acc, i){
         return Math.max(acc, String(i.pedido).length);
       }, 1);
+      var maxQtdLen = itensFinal.reduce(function(acc, i){
+        return Math.max(acc, String(i.quantidade > 0 ? i.quantidade : 1).length);
+      }, 1);
 
-      // 4) Calcular font-size proporcional à célula (em px, convertemos para pt)
-      //    font-size do pedido: ajusta pela largura da célula e pelo tamanho do texto
-      //    fator empírico: cada char ocupa ~0.58× o font-size (fonte condensada/bold)
-      var maxFontePedidoPx = Math.min(
-        cellW / (maxPedidoLen * 0.58),   // limitado pela largura
-        cellH * 0.35                      // limitado pela altura (35% da célula)
-      );
-      maxFontePedidoPx = Math.max(6, Math.floor(maxFontePedidoPx));
+      // Verificar se algum item tem volume (define se há 2 ou 3 campos por célula)
+      var temVolume = itensFinal.some(function(i){ return i.volume > 0; });
+      var numCampos = temVolume ? 3 : 2;
 
-      // 5) Quantidade ocupa ~45% da altura da célula, limitada pela largura também
-      var maxFonteQtdPx = Math.min(
-        cellH * 0.45,
-        cellW * 0.85
-      );
-      maxFonteQtdPx = Math.max(8, Math.floor(maxFonteQtdPx));
+      // Padding interno da célula: 2mm top/bottom, 3mm left/right
+      var padHpx = 2 * mmToPx * 2; // vertical
+      var padWpx = 3 * mmToPx * 2; // horizontal
+      var padCampoPx = 2 * mmToPx * 2; // padding interno de cada campo (2mm cada lado)
 
-      // 6) Label "QTD" é sempre pequena (12% da célula)
-      var fonteLabel = Math.max(5, Math.floor(cellH * 0.12));
+      // Área interna útil da célula
+      var innerH = cellHpx - padHpx;
+      var innerW = cellWpx - padWpx;
 
-      // 7) Converter px → pt (1pt = 1.333px)
-      var fontePedido = Math.round(maxFontePedidoPx / 1.333) + "pt";
-      var fonteQtd    = Math.round(maxFonteQtdPx    / 1.333) + "pt";
-      var fonteLabelPt = Math.round(fonteLabel       / 1.333) + "pt";
+      // Largura disponível para cada campo (dividida igualmente entre numCampos)
+      var campoW = (innerW / numCampos) - padCampoPx;
 
-      // 8) Montar blocos de pedidos (sem separadores — o grid já divide)
+      // Label ocupa ~20% da altura da célula
+      var fLabelPx = Math.max(5, Math.floor(innerH * 0.20));
+      // Área restante da célula para o valor (80% da altura - label)
+      var valorH = innerH - (fLabelPx * 1.4); // 1.4 = line-height da label
+
+      // 4) Fonte do PEDIDO — limitada pela largura do campo e pela altura disponível
+      //    Syne bold: cada char ocupa ~0.55× o font-size
+      var fPedidoPxByW = campoW / (maxPedidoLen * 0.55);
+      var fPedidoPxByH = valorH;
+      var fPedidoPx = Math.max(6, Math.floor(Math.min(fPedidoPxByW, fPedidoPxByH)));
+
+      // 5) Fonte da QUANTIDADE/VOLUME — mesma lógica
+      var fQtdPxByW = campoW / (maxQtdLen * 0.62);
+      var fQtdPxByH = valorH;
+      var fQtdPx = Math.max(6, Math.floor(Math.min(fQtdPxByW, fQtdPxByH)));
+
+      // 7) Converter px → pt (1pt = 1.3333px)
+      function pxToPt(px){ return Math.round(px / 1.3333) + "pt"; }
+      var fontePedido  = pxToPt(fPedidoPx);
+      var fonteQtd     = pxToPt(fQtdPx);
+      var fonteLabelPt = pxToPt(fLabelPx);
+
+      // 8) Montar células do grid
+      // Dentro de cada célula: PEDIDO | QTD | VOLUME em linha horizontal
+      // Cada campo tem label em cima e valor embaixo
+      // A célula inteira é display:flex; flex-direction:row
+
+      var cellStyle = [
+        'display:flex',
+        'flex-direction:row',
+        'align-items:center',
+        'justify-content:center',
+        'overflow:hidden',
+        'padding:2mm 3mm',
+        'border:1px solid #e0e0e0',
+        'box-sizing:border-box',
+        'gap:0'
+      ].join(';');
+
+      // Estilo de cada campo dentro da célula (coluna vertical: label + valor)
+      var campoStyle = [
+        'display:flex',
+        'flex-direction:column',
+        'align-items:center',
+        'justify-content:center',
+        'text-align:center',
+        'flex:1',
+        'overflow:hidden',
+        'padding:0 2mm'
+      ].join(';');
+
+      // Separador vertical entre campos
+      var sepStyle = [
+        'width:1px',
+        'background:#e0e0e0',
+        'align-self:stretch',
+        'flex-shrink:0',
+        'margin:2mm 0'
+      ].join(';');
+
+      var labelStyle = [
+        'font-size:' + fonteLabelPt,
+        'font-weight:700',
+        'color:#aaa',
+        'letter-spacing:2px',
+        'text-transform:uppercase',
+        'white-space:nowrap',
+        'margin-bottom:1mm'
+      ].join(';');
+
       var blocosHTML = itensFinal.map(function(item){
-        var qtdStr = item.quantidade > 0 ? item.quantidade : "—";
-        return (
-          '<div class="end-pedido-item">' +
-            '<div class="end-pedido-numero" style="font-size:' + fontePedido + '">' +
-              escapeHTML(item.pedido) +
-            '</div>' +
-            '<div class="end-pedido-qtd" style="font-size:' + fonteQtd + '">' +
-              qtdStr +
-            '</div>' +
-            '<div class="end-pedido-label" style="font-size:' + fonteLabelPt + '">QTD</div>' +
-          '</div>'
-        );
+        var qtdStr = item.quantidade > 0 ? String(item.quantidade) : "—";
+        var volStr = item.volume     > 0 ? String(item.volume)     : "—";
+        var temVolume = item.volume > 0;
+
+        var campoPedido =
+          '<div style="' + campoStyle + '">' +
+            '<div style="' + labelStyle + '">PEDIDO</div>' +
+            '<div style="' +
+              'font-size:' + fontePedido + ';' +
+              'font-weight:800;color:#E8620A;line-height:1;' +
+              'letter-spacing:-0.5px;font-family:Syne,Arial,sans-serif;' +
+              'white-space:nowrap;overflow:hidden;max-width:100%' +
+            '">' + escapeHTML(item.pedido) + '</div>' +
+          '</div>';
+
+        var campoQtd =
+          '<div style="' + sepStyle + '"></div>' +
+          '<div style="' + campoStyle + '">' +
+            '<div style="' + labelStyle + '">QTD</div>' +
+            '<div style="' +
+              'font-size:' + fonteQtd + ';' +
+              'font-weight:900;color:#111;line-height:1;' +
+              'font-family:Syne,Arial,sans-serif;' +
+              'white-space:nowrap;overflow:hidden;max-width:100%' +
+            '">' + qtdStr + '</div>' +
+          '</div>';
+
+        var campoVol = temVolume
+          ? '<div style="' + sepStyle + '"></div>' +
+            '<div style="' + campoStyle + '">' +
+              '<div style="' + labelStyle + '">VOL</div>' +
+              '<div style="' +
+                'font-size:' + fonteQtd + ';' +
+                'font-weight:900;color:#555;line-height:1;' +
+                'font-family:Syne,Arial,sans-serif;' +
+                'white-space:nowrap;overflow:hidden;max-width:100%' +
+              '">' + volStr + '</div>' +
+            '</div>'
+          : '';
+
+        return '<div style="' + cellStyle + '">' +
+          campoPedido + campoQtd + campoVol +
+        '</div>';
       }).join("");
 
-      // ── Montar HTML da etiqueta meia folha ──
+      // ── Montar HTML da etiqueta A4 completa ──
       var dataGeracao = new Date().toLocaleDateString("pt-BR");
+      var gridStyle = [
+        'display:grid',
+        'grid-template-columns:repeat(' + cols + ',1fr)',
+        'grid-template-rows:repeat(' + rows + ',1fr)',
+        'flex:1',
+        'min-height:0',
+        'overflow:hidden'
+      ].join(';');
+
       var etiquetaHTML =
         '<div class="etiqueta-header">' +
           '<img src="' + LOGO_URL + '" alt="Condor"/>' +
@@ -701,15 +862,7 @@ function gerarEtiquetaPorEndereco() {
             '<div class="end-meta-valor">' + numPedidos + '</div>' +
           '</div>' +
         '</div>' +
-        '<div class="end-pedidos-grid" ' +
-             'style="' +
-               'display:grid;' +
-               'grid-template-columns:repeat(' + cols + ',1fr);' +
-               'grid-template-rows:repeat(' + rows + ',1fr);' +
-               'gap:0;' +
-               'flex:1;' +
-               'overflow:hidden;' +
-             '">' +
+        '<div style="' + gridStyle + '">' +
           blocosHTML +
         '</div>' +
         '<div class="end-rodape">' +
@@ -727,78 +880,60 @@ function gerarEtiquetaPorEndereco() {
           "*{box-sizing:border-box;margin:0;padding:0;}",
           "body{font-family:'DM Sans',Arial,sans-serif;background:#fff;color:#1a1a1a;}",
 
-          /* Layout principal da etiqueta — meia folha A4 */
+          /* Layout principal — A4 completo */
           ".etiqueta-end{",
-            "width:210mm;min-height:148mm;max-height:148mm;",
-            "background:#fff;padding:6mm 12mm 5mm;",
+            "width:210mm;height:297mm;",
+            "background:#fff;padding:8mm 10mm 6mm;",
             "display:flex;flex-direction:column;overflow:hidden;",
           "}",
 
           /* Cabeçalho */
-          ".etiqueta-header{display:flex;align-items:center;justify-content:space-between;border-bottom:4px solid #E8620A;padding-bottom:3mm;margin-bottom:4mm;}",
-          ".etiqueta-header img{height:12mm;object-fit:contain;}",
-          ".etiqueta-titulo h1{font-size:13pt;font-weight:900;color:#E8620A;text-transform:uppercase;text-align:right;font-family:'Syne',Arial,sans-serif;}",
+          ".etiqueta-header{display:flex;align-items:center;justify-content:space-between;border-bottom:4px solid #E8620A;padding-bottom:4mm;margin-bottom:4mm;flex-shrink:0;}",
+          ".etiqueta-header img{height:14mm;object-fit:contain;}",
+          ".etiqueta-titulo h1{font-size:14pt;font-weight:900;color:#E8620A;text-transform:uppercase;text-align:right;font-family:'Syne',Arial,sans-serif;}",
           ".etiqueta-titulo p{font-size:6.5pt;color:#999;letter-spacing:2px;text-transform:uppercase;text-align:right;margin-top:1mm;}",
 
-          /* Linha de metadados */
-          ".end-meta{display:flex;gap:4mm;margin-bottom:4mm;}",
+          /* Metadados */
+          ".end-meta{display:flex;gap:3mm;margin-bottom:4mm;flex-shrink:0;}",
           ".end-meta-bloco{flex:1;border:1.5px solid #e8e8e8;border-radius:6px;padding:2.5mm 4mm;background:#fafafa;}",
           ".end-meta-bloco.destaque{border-color:#E8620A;background:#fff5f0;}",
           ".end-meta-label{font-size:6pt;font-weight:700;color:#E8620A;letter-spacing:2px;text-transform:uppercase;margin-bottom:1mm;}",
           ".end-meta-valor{font-size:12pt;font-weight:800;color:#111;line-height:1.1;}",
 
-          /* Grid de pedidos — colunas/linhas definidas inline pelo JS */
-          ".end-pedidos-grid{",
-            "flex:1;",
-            "overflow:hidden;",
-          "}",
+          /* Grid: ocupa todo espaço restante; col/row definidos inline pelo JS */
+          ".end-pedidos-grid{flex:1;min-height:0;display:grid;}",
 
-          /* Cada item de pedido */
+          /* Célula fechada — texto nunca sai da grade */
           ".end-pedido-item{",
-            "display:flex;",
-            "flex-direction:column;",
-            "align-items:center;",
-            "justify-content:center;",
-            "text-align:center;",
-            "padding:2mm;",
-            "border-right:1.5px solid #e0e0e0;",
-            "border-bottom:1.5px solid #e0e0e0;",
+            "display:flex;flex-direction:column;",
+            "align-items:center;justify-content:center;text-align:center;",
+            "overflow:hidden;padding:3mm;",
+            "border:1px solid #e0e0e0;",
+            "box-sizing:border-box;",
           "}",
-          ".end-pedido-item:last-child{border-right:none;}",
-
-          /* Separador legado — oculto no novo sistema */
-          ".end-pedido-sep{display:none;}",
 
           /* Número do pedido */
           ".end-pedido-numero{",
-            "font-weight:800;",
-            "color:#E8620A;",
-            "line-height:1;",
-            "letter-spacing:-0.5px;",
-            "font-family:'Syne',Arial,sans-serif;",
-            "margin-bottom:2mm;",
-            "word-break:break-all;",
+            "font-weight:800;color:#E8620A;line-height:1;",
+            "letter-spacing:-0.5px;font-family:'Syne',Arial,sans-serif;",
+            "white-space:nowrap;overflow:hidden;max-width:100%;",
           "}",
 
           /* Quantidade */
           ".end-pedido-qtd{",
-            "font-weight:900;",
-            "color:#111;",
-            "line-height:1;",
+            "font-weight:900;color:#111;line-height:1;",
             "font-family:'Syne',Arial,sans-serif;",
+            "white-space:nowrap;overflow:hidden;max-width:100%;",
           "}",
 
-          /* Label "QTD" abaixo da quantidade */
+          /* Label QTD */
           ".end-pedido-label{",
-            "font-weight:700;",
-            "color:#aaa;",
-            "letter-spacing:3px;",
-            "text-transform:uppercase;",
-            "margin-top:1.5mm;",
+            "font-weight:700;color:#aaa;letter-spacing:3px;",
+            "text-transform:uppercase;margin-top:1.5mm;white-space:nowrap;",
           "}",
 
           /* Rodapé */
-          ".end-rodape{margin-top:3mm;display:flex;justify-content:space-between;align-items:center;border-top:2px solid #E8620A;padding-top:2.5mm;}",
+          ".end-rodape{flex-shrink:0;margin-top:3mm;display:flex;justify-content:space-between;align-items:center;border-top:2px solid #E8620A;padding-top:2.5mm;}",
           ".end-rodape-data{font-size:7pt;color:#aaa;letter-spacing:1px;}",
           ".end-rodape-total{font-size:8pt;font-weight:700;color:#E8620A;letter-spacing:1px;text-transform:uppercase;}",
 
