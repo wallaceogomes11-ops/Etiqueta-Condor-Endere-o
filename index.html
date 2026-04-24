@@ -145,9 +145,9 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#0c0c0f;color:
 .end-meta-bloco.destaque{border-color:#E8620A;background:#fff5f0;}
 .end-meta-label{font-size:6pt;font-weight:700;color:#E8620A;letter-spacing:2px;text-transform:uppercase;margin-bottom:1.5mm;}
 .end-meta-valor{font-size:13pt;font-weight:800;color:#111;line-height:1.1;}
-.end-pedidos-grid{flex:1;display:flex;flex-direction:row;align-items:stretch;overflow:hidden;}
-.end-pedido-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2mm;}
-.end-pedido-sep{width:1.5px;background:#e0e0e0;margin:3mm 0;flex-shrink:0;}
+.end-pedidos-grid{flex:1;overflow:hidden;}
+.end-pedido-item{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2mm;border-right:1.5px solid #e0e0e0;border-bottom:1.5px solid #e0e0e0;}
+.end-pedido-sep{display:none;}
 .end-pedido-numero{font-weight:800;color:#E8620A;line-height:1;letter-spacing:-0.5px;font-family:'Syne',Arial,sans-serif;margin-bottom:2mm;word-break:break-all;}
 .end-pedido-qtd{font-weight:900;color:#111;line-height:1;font-family:'Syne',Arial,sans-serif;}
 .end-pedido-label{font-weight:700;color:#aaa;letter-spacing:3px;text-transform:uppercase;margin-top:1.5mm;}
@@ -619,24 +619,53 @@ function gerarEtiquetaPorEndereco() {
       var totalGeral = itensFinal.reduce(function(acc, i){ return acc + i.quantidade; }, 0);
       var numPedidos = itensFinal.length;
 
-      // ── Calcular tamanhos de fonte dinamicamente ──
-      // 1 pedido → fonte enorme; mais pedidos → fonte menor
-      var fontePedido, fonteQtd, paddingItem, fonteLabel;
-      if (numPedidos === 1) {
-        fontePedido = "52pt"; fonteQtd = "80pt"; paddingItem = "0"; fonteLabel = "9pt";
-      } else if (numPedidos === 2) {
-        fontePedido = "34pt"; fonteQtd = "52pt"; paddingItem = "3mm 0"; fonteLabel = "8pt";
-      } else if (numPedidos === 3) {
-        fontePedido = "24pt"; fonteQtd = "36pt"; paddingItem = "2mm 0"; fonteLabel = "7pt";
-      } else if (numPedidos === 4) {
-        fontePedido = "18pt"; fonteQtd = "26pt"; paddingItem = "1.5mm 0"; fonteLabel = "7pt";
-      } else if (numPedidos <= 6) {
-        fontePedido = "14pt"; fonteQtd = "20pt"; paddingItem = "1mm 0"; fonteLabel = "6.5pt";
-      } else {
-        fontePedido = "11pt"; fonteQtd = "15pt"; paddingItem = "0.5mm 0"; fonteLabel = "6pt";
-      }
+      // ══════════════════════════════════════════════════════
+      // SISTEMA DE GRID DINÂMICO — funciona para qualquer N
+      // ══════════════════════════════════════════════════════
 
-      // ── Montar blocos de pedidos ──
+      // 1) Calcular colunas e linhas do grid
+      var cols = Math.ceil(Math.sqrt(numPedidos));
+      var rows = Math.ceil(numPedidos / cols);
+
+      // 2) Área disponível da etiqueta (meia folha A4 em px @96dpi)
+      //    210mm × 148mm → ~794px × ~559px
+      //    Descontando: header ~55px, meta ~50px, rodapé ~28px, padding 2×(6mm~23px)
+      var areaW = 794 - 2 * 45;  // largura útil (~704px)
+      var areaH = 559 - 55 - 50 - 28 - 46; // altura útil grid (~380px)
+
+      var cellW = areaW / cols;
+      var cellH = areaH / rows;
+
+      // 3) Tamanho máximo do texto do pedido (ex: "123456" → 6 chars)
+      var maxPedidoLen = itensFinal.reduce(function(acc, i){
+        return Math.max(acc, String(i.pedido).length);
+      }, 1);
+
+      // 4) Calcular font-size proporcional à célula (em px, convertemos para pt)
+      //    font-size do pedido: ajusta pela largura da célula e pelo tamanho do texto
+      //    fator empírico: cada char ocupa ~0.58× o font-size (fonte condensada/bold)
+      var maxFontePedidoPx = Math.min(
+        cellW / (maxPedidoLen * 0.58),   // limitado pela largura
+        cellH * 0.35                      // limitado pela altura (35% da célula)
+      );
+      maxFontePedidoPx = Math.max(6, Math.floor(maxFontePedidoPx));
+
+      // 5) Quantidade ocupa ~45% da altura da célula, limitada pela largura também
+      var maxFonteQtdPx = Math.min(
+        cellH * 0.45,
+        cellW * 0.85
+      );
+      maxFonteQtdPx = Math.max(8, Math.floor(maxFonteQtdPx));
+
+      // 6) Label "QTD" é sempre pequena (12% da célula)
+      var fonteLabel = Math.max(5, Math.floor(cellH * 0.12));
+
+      // 7) Converter px → pt (1pt = 1.333px)
+      var fontePedido = Math.round(maxFontePedidoPx / 1.333) + "pt";
+      var fonteQtd    = Math.round(maxFonteQtdPx    / 1.333) + "pt";
+      var fonteLabelPt = Math.round(fonteLabel       / 1.333) + "pt";
+
+      // 8) Montar blocos de pedidos (sem separadores — o grid já divide)
       var blocosHTML = itensFinal.map(function(item){
         var qtdStr = item.quantidade > 0 ? item.quantidade : "—";
         return (
@@ -647,10 +676,10 @@ function gerarEtiquetaPorEndereco() {
             '<div class="end-pedido-qtd" style="font-size:' + fonteQtd + '">' +
               qtdStr +
             '</div>' +
-            '<div class="end-pedido-label" style="font-size:' + fonteLabel + '">QTD</div>' +
+            '<div class="end-pedido-label" style="font-size:' + fonteLabelPt + '">QTD</div>' +
           '</div>'
         );
-      }).join('<div class="end-pedido-sep"></div>');
+      }).join("");
 
       // ── Montar HTML da etiqueta meia folha ──
       var dataGeracao = new Date().toLocaleDateString("pt-BR");
@@ -672,8 +701,15 @@ function gerarEtiquetaPorEndereco() {
             '<div class="end-meta-valor">' + numPedidos + '</div>' +
           '</div>' +
         '</div>' +
-        '<div class="end-pedidos-grid end-pedidos-n' + Math.min(numPedidos, 7) + '" ' +
-             'style="padding:' + paddingItem + '">' +
+        '<div class="end-pedidos-grid" ' +
+             'style="' +
+               'display:grid;' +
+               'grid-template-columns:repeat(' + cols + ',1fr);' +
+               'grid-template-rows:repeat(' + rows + ',1fr);' +
+               'gap:0;' +
+               'flex:1;' +
+               'overflow:hidden;' +
+             '">' +
           blocosHTML +
         '</div>' +
         '<div class="end-rodape">' +
@@ -711,34 +747,27 @@ function gerarEtiquetaPorEndereco() {
           ".end-meta-label{font-size:6pt;font-weight:700;color:#E8620A;letter-spacing:2px;text-transform:uppercase;margin-bottom:1mm;}",
           ".end-meta-valor{font-size:12pt;font-weight:800;color:#111;line-height:1.1;}",
 
-          /* Grid de pedidos — ocupa todo o espaço restante */
+          /* Grid de pedidos — colunas/linhas definidas inline pelo JS */
           ".end-pedidos-grid{",
             "flex:1;",
-            "display:flex;",
-            "flex-direction:row;",
-            "align-items:stretch;",
-            "gap:0;",
             "overflow:hidden;",
           "}",
 
           /* Cada item de pedido */
           ".end-pedido-item{",
-            "flex:1;",
             "display:flex;",
             "flex-direction:column;",
             "align-items:center;",
             "justify-content:center;",
             "text-align:center;",
             "padding:2mm;",
+            "border-right:1.5px solid #e0e0e0;",
+            "border-bottom:1.5px solid #e0e0e0;",
           "}",
+          ".end-pedido-item:last-child{border-right:none;}",
 
-          /* Separador vertical entre pedidos */
-          ".end-pedido-sep{",
-            "width:1.5px;",
-            "background:#e0e0e0;",
-            "margin:3mm 0;",
-            "flex-shrink:0;",
-          "}",
+          /* Separador legado — oculto no novo sistema */
+          ".end-pedido-sep{display:none;}",
 
           /* Número do pedido */
           ".end-pedido-numero{",
